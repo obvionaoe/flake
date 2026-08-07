@@ -67,7 +67,7 @@ fi
 echo "==> Running first darwin-rebuild switch for host '$hostname' (requires sudo)..."
 /usr/bin/sudo "$DARWIN_REBUILD" switch \
   --flake "$flake_dir#$hostname" \
-  --extra-experimental-features "nix-command flakes"
+  --option experimental-features "nix-command flakes"
 
 echo "==> Done. $flake_dir is now the source of truth for this machine."
 echo "    Future rebuilds: darwin-rebuild switch --flake $flake_dir#$hostname"
