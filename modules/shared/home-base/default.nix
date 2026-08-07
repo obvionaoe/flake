@@ -23,6 +23,11 @@
         enable = true;
         localBinInPath = true;
       };
+      # Global opt-in: any home-manager module that supports it (npm,
+      # atuin, lazygit, kubecolor, readline, dircolors, github-copilot-cli,
+      # codex, gtk2 as of this home-manager pin) relocates its own
+      # dotfiles under XDG paths instead of flat files in $HOME.
+      home.preferXdgDirectories = true;
     };
   };
 }

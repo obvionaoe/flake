@@ -8,11 +8,12 @@
 in {
   options.modules.git.enable = lib.mkEnableOption "git";
 
-  # The old flake had per-directory conditional `includes` for a work identity
-  # (name/email + insteadOf URL rewrites) alongside this personal one. This is
-  # a public repo with a single public identity, so that split — and the
-  # work email/domains it referenced — is intentionally not ported. See
-  # "Public repository" in the root CLAUDE.md.
+  # This module only ever sets the public obvionaoe/protonmail identity — see
+  # "Public repository" in the root CLAUDE.md. A host that needs a different
+  # identity (e.g. work) adds its own `programs.git.includes` conditional
+  # include in that host's default.nix, pointing at a file outside this repo
+  # that nix never manages, so no other name/email ever lands here. See
+  # `hosts/darwin/work/default.nix` for the reference example.
   config = lib.mkIf cfg.enable {
     home-manager.users.${user} = {
       home.shellAliases = {

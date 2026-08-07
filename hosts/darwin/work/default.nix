@@ -6,6 +6,18 @@
   nixpkgs.hostPlatform = "aarch64-darwin";
   system.primaryUser = "user";
 
+  # Work identity override: repos under ~/work/ pick up name/email from
+  # ~/.config/git/config-work instead of the public obvionaoe identity in
+  # modules/shared/git. That file is created by hand on this machine and is
+  # never managed by nix, so the actual work name/email never lands in this
+  # public repo — see "Public repository" in the root CLAUDE.md.
+  home-manager.users.${user}.programs.git.includes = [
+    {
+      condition = "gitdir:~/work/";
+      path = "~/.config/git/config-work";
+    }
+  ];
+
   modules = {
     zsh.enable = true;
     zoxide.enable = true;
