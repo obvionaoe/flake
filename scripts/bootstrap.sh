@@ -51,7 +51,16 @@ done
 
 flake_dir="$HOME/.flake"
 if [[ -d "$flake_dir" ]]; then
-  echo "==> $flake_dir already exists, leaving it as-is (not re-cloning)."
+  if [[ ! -d "$flake_dir/.git" ]]; then
+    echo "error: $flake_dir exists but isn't a git repo; move or remove it and re-run." >&2
+    exit 1
+  fi
+  echo "==> $flake_dir already exists, syncing to latest $REPO_URL (local changes discarded)..."
+  git -C "$flake_dir" remote set-url origin "$REPO_URL"
+  git -C "$flake_dir" fetch origin main
+  git -C "$flake_dir" checkout -B main origin/main
+  git -C "$flake_dir" reset --hard origin/main
+  git -C "$flake_dir" clean -fd
 else
   echo "==> Cloning $REPO_URL to $flake_dir..."
   git clone "$REPO_URL" "$flake_dir"
