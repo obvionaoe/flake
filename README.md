@@ -19,7 +19,10 @@ nix run --extra-experimental-features "nix-command flakes" github:obvionaoe/flak
 
 Installs Xcode Command Line Tools and Rosetta 2 if missing, clones this repo to
 `~/.flake`, and runs the first `darwin-rebuild switch`. `<hostname>` must match
-one of the directories under `hosts/darwin/` (currently `air` or `work`).
+one of the directories under `hosts/darwin/` (currently `air` or `work`), and
+must be run while logged into the macOS account that host declares as
+`system.primaryUser` (`obvionaoe` for `air`, `user` for `work`) — the bootstrap
+checks this and errors out early on a mismatch.
 
 Safe to re-run: if `~/.flake` already exists (e.g. a previous attempt failed
 partway through), it's fetched and hard-reset to `origin/main` rather than

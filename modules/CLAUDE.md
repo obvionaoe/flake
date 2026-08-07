@@ -192,3 +192,7 @@ Read an existing module (e.g. `modules/shared/zsh/`) before adding a new
 one, to match the established shape. Keep modules small and
 single-purpose — one program or concern per module, named after what it
 configures.
+
+The `user` argument (e.g. `home-manager.users.${user}`) isn't a flake-level
+constant — it's set per host from `system.primaryUser`. See
+`hosts/CLAUDE.md`, "The `user` module argument".

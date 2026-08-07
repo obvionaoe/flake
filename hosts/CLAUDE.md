@@ -18,10 +18,21 @@ new nixos host will "just work" once the directory exists.
 
 ## Adding a new host
 
-Create `hosts/<platform>/<name>/default.nix`, set `nixpkgs.hostPlatform`,
-and flip on whichever `modules.<name>.enable` flags it needs. Remember to
-`git add` the new directory — see root `CLAUDE.md`, untracked files are
-invisible to the flake.
+Create `hosts/<platform>/<name>/default.nix`, set `nixpkgs.hostPlatform` and
+`system.primaryUser` (the macOS account this host is bootstrapped as — see
+"The `user` module argument" below), and flip on whichever
+`modules.<name>.enable` flags it needs. Remember to `git add` the new
+directory — see root `CLAUDE.md`, untracked files are invisible to the flake.
+
+## The `user` module argument
+
+Every module takes `user` as a function argument (alongside `pkgs`, `lib`,
+etc.), but it isn't set globally in `flake.nix` — it's derived per host from
+that host's own `system.primaryUser` (an inline module in
+`darwinConfigurations` in `flake.nix` feeds it back out via
+`_module.args.user`). Setting `system.primaryUser` in a host's `default.nix`
+is what fixes `user` for every module on that host, including
+`home-manager.users.${user}` and `/Users/${user}`.
 
 ## Don't duplicate options across hosts
 

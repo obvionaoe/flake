@@ -4,6 +4,7 @@
   ...
 }: {
   nixpkgs.hostPlatform = "aarch64-darwin";
+  system.primaryUser = "obvionaoe";
 
   modules = {
     android-studio.enable = true;

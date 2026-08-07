@@ -4,6 +4,7 @@
   ...
 }: {
   nixpkgs.hostPlatform = "aarch64-darwin";
+  system.primaryUser = "user";
 
   modules = {
     zsh.enable = true;

@@ -73,6 +73,17 @@ if [[ ! -d "$flake_dir/hosts/darwin/$hostname" ]]; then
   exit 1
 fi
 
+echo "==> Checking that host '$hostname' is configured for this macOS account..."
+expected_user="$(nix eval --raw \
+  --option experimental-features "nix-command flakes" \
+  "$flake_dir#darwinConfigurations.$hostname.config.system.primaryUser" 2>/dev/null || true)"
+current_user="$(/usr/bin/id -un)"
+if [[ -n "$expected_user" && "$expected_user" != "$current_user" ]]; then
+  echo "error: host '$hostname' is configured for macOS account '$expected_user', but you are '$current_user'." >&2
+  echo "       Fix system.primaryUser in hosts/darwin/$hostname/default.nix, or bootstrap a different host." >&2
+  exit 1
+fi
+
 echo "==> Running first darwin-rebuild switch for host '$hostname' (requires sudo)..."
 /usr/bin/sudo "$DARWIN_REBUILD" switch \
   --flake "$flake_dir#$hostname" \

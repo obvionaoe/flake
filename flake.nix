@@ -60,9 +60,6 @@
     home-manager,
     ...
   }: let
-    user = "obvionaoe";
-
-    mkHome = import ./lib/mkHome.nix {inherit user;};
     autoImport = import ./lib/autoImport.nix {inherit (nixpkgs) lib;};
     autoPkgs = import ./lib/autoPkgs.nix {inherit (nixpkgs) lib;};
 
@@ -81,7 +78,7 @@
     nixosModules = autoImport ./modules/nixos;
     darwinModules = autoImport ./modules/darwin;
 
-    specialArgs = inputs // {inherit user mkHome;};
+    specialArgs = inputs;
 
     darwinSystems = ["aarch64-darwin" "x86_64-darwin"];
 
@@ -138,6 +135,9 @@
       };
     });
 
+    # NixOS has no `system.primaryUser` to hang `_module.args.user` off of like
+    # darwinConfigurations does below — pick a source for it (a plain option,
+    # or read off `users.users`) before uncommenting this.
     #    nixosConfigurations = nixpkgs.lib.genAttrs nixosHosts (hostname:
     #      nixpkgs.lib.nixosSystem {
     #        inherit specialArgs;
@@ -158,9 +158,19 @@
             ++ darwinModules
             ++ [
               {networking.hostName = nixpkgs.lib.mkDefault hostname;}
-              {system.primaryUser = user;}
-              {users.users.${user}.name = user;}
-              {users.users.${user}.home = "/Users/${user}";}
+              # `system.primaryUser` is set per-host in hosts/darwin/<name>/default.nix.
+              # Feed it back out as the `user` module argument every module already
+              # expects, plus `mkHome` (see lib/mkHome.nix) which needs the same value.
+              ({config, ...}: {
+                _module.args.user = config.system.primaryUser;
+                _module.args.mkHome = import ./lib/mkHome.nix {user = config.system.primaryUser;};
+              })
+              ({user, ...}: {
+                users.users.${user} = {
+                  name = user;
+                  home = "/Users/${user}";
+                };
+              })
               home-manager.darwinModules.home-manager
               ./hosts/darwin/${hostname}
             ];
