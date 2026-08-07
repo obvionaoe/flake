@@ -21,6 +21,16 @@ Installs Xcode Command Line Tools and Rosetta 2 if missing, clones this repo to
 `~/.flake`, and runs the first `darwin-rebuild switch`. `<hostname>` must match
 one of the directories under `hosts/darwin/` (currently `air` or `work`).
 
+Safe to re-run: if `~/.flake` already exists (e.g. a previous attempt failed
+partway through), it's fetched and hard-reset to `origin/main` rather than
+left as-is — the remote always wins, no manual deleting needed. If you're
+retrying shortly after a fix was pushed, add `--refresh` so `nix` doesn't
+reuse its cached copy of the flake from the last run:
+
+```sh
+nix run --refresh --extra-experimental-features "nix-command flakes" github:obvionaoe/flake -- <hostname>
+```
+
 **Applying changes after editing the flake:**
 
 ```sh
