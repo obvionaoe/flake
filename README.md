@@ -9,10 +9,12 @@ with one command.
 
 ## Quickstart
 
-**Fresh Mac, only Nix installed:**
+**Fresh Mac, only Nix installed** (any installer — the flag below enables
+flakes for this one command, no `nix.conf` editing needed even on a vanilla
+install):
 
 ```sh
-nix run github:obvionaoe/flake -- <hostname>
+nix run --extra-experimental-features "nix-command flakes" github:obvionaoe/flake -- <hostname>
 ```
 
 Installs Xcode Command Line Tools and Rosetta 2 if missing, clones this repo to
