@@ -61,6 +61,13 @@ in {
     system.activationScripts.postActivation.text = ''
     # Following line should allow us to avoid a logout/login cycle when changing settings
     sudo -u ${user} /System/Library/PrivateFrameworks/SystemAdministration.framework/Resources/activateSettings -u
+
+    # nix-darwin's power.sleep.display (systemsetup -setDisplaySleep) only
+    # ever affects AC power, even run manually with sudo — verified it
+    # silently leaves battery's value untouched. pmset -b/-c set each power
+    # source independently and actually work.
+    pmset -b displaysleep 5
+    pmset -c displaysleep 10
     '';
   };
 }
