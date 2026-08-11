@@ -84,6 +84,53 @@ if [[ -n "$expected_user" && "$expected_user" != "$current_user" ]]; then
   exit 1
 fi
 
+# Hosts whose git identity can't be committed to this public repo set
+# `modules.git.identityFile` to a path outside it (see modules/shared/git).
+# Nothing creates that file but this, so prompt for it before the first switch —
+# git silently ignores a missing include, so a skipped prompt just means an
+# identity-less git until the file is written by hand.
+echo "==> Checking git identity for host '$hostname'..."
+identity_file="$(nix eval --raw \
+  --option experimental-features "nix-command flakes" \
+  --apply 'v: if v == null then "" else v' \
+  "$flake_dir#darwinConfigurations.$hostname.config.modules.git.identityFile" 2>/dev/null || true)"
+
+if [[ -z "$identity_file" ]]; then
+  echo "Host '$hostname' declares its git identity in the flake — nothing to write."
+else
+  identity_path="${identity_file/#\~/$HOME}"
+  if [[ -e "$identity_path" ]]; then
+    echo "$identity_path already exists — leaving it alone."
+  else
+    echo "Host '$hostname' keeps its git identity out of the repo, in $identity_path."
+    git_name=""
+    git_email=""
+    # `|| true`: the wrapper runs under `set -e`, and `read` fails on EOF (a
+    # non-interactive run) — that should fall through to the warning, not abort
+    # the whole bootstrap.
+    read -rp "  git user.name: " git_name || true
+    read -rp "  git user.email: " git_email || true
+    if [[ -z "$git_name" || -z "$git_email" ]]; then
+      echo "warning: name or email left empty — skipping. git will have no identity" >&2
+      echo "         on this machine until you create $identity_path yourself:" >&2
+      echo "           [user]" >&2
+      echo "             name = ..." >&2
+      echo "             email = ..." >&2
+    else
+      /bin/mkdir -p "$(/usr/bin/dirname "$identity_path")"
+      /bin/cat >"$identity_path" <<EOF
+# Written by scripts/bootstrap.sh. Not managed by ~/.flake, and deliberately
+# outside it — this identity must not be committed to a public repo.
+[user]
+	name = $git_name
+	email = $git_email
+EOF
+      /bin/chmod 600 "$identity_path"
+      echo "Wrote $identity_path."
+    fi
+  fi
+fi
+
 echo "==> Running first darwin-rebuild switch for host '$hostname' (requires sudo)..."
 /usr/bin/sudo "$DARWIN_REBUILD" switch \
   --flake "$flake_dir#$hostname" \

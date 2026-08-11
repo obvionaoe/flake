@@ -54,6 +54,10 @@ in {
 
           tfchk = ''_tfchk(){terraform init && terraform fmt -recursive && terraform-docs --lockfile=false . && terraform validate && if [ "$1" = "p" ]; then terraform plan; fi && tflint --init && tflint --recursive && trivy config . && rm -rf .terraform && rm .terraform.lock.hcl}; _tfchk'';
         };
+
+        home.sessionVariables = {
+          TENV_GITHUB_TOKEN = "$(gh auth token)";
+        };
       };
     })
 

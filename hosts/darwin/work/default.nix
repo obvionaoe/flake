@@ -1,27 +1,17 @@
-{
-  pkgs,
-  user,
-  ...
-}: {
+{...}: {
   nixpkgs.hostPlatform = "aarch64-darwin";
   system.primaryUser = "user";
-
-  # Work identity override: repos under ~/work/ pick up name/email from
-  # ~/.config/git/config-work instead of the public obvionaoe identity in
-  # modules/shared/git. That file is created by hand on this machine and is
-  # never managed by nix, so the actual work name/email never lands in this
-  # public repo — see "Public repository" in the root CLAUDE.md.
-  home-manager.users.${user}.programs.git.includes = [
-    {
-      condition = "gitdir:~/work/";
-      path = "~/.config/git/config-work";
-    }
-  ];
 
   modules = {
     zsh.enable = true;
     zoxide.enable = true;
-    git.enable = true;
+    git = {
+      enable = true;
+      # This host's identity is a real name + employer address, which must never
+      # be committed to this public repo — it lives in an untracked file that
+      # scripts/bootstrap.sh prompts for and writes on first run.
+      identityFile = "~/.config/git/identity";
+    };
     direnv.enable = true;
     ghostty.enable = true;
     tmux.enable = true;
@@ -34,6 +24,7 @@
     bitwarden.enable = true;
     spotify.enable = true;
     ungoogled-chromium.enable = true;
+    logi-options-plus.enable = true;
 
     fonts.enable = true;
     macos-defaults.enable = true;
@@ -70,6 +61,7 @@
 
     firefox.enable = true;
     obsidian.enable = true;
+    soloterm.enable = true;
   };
 
   system.stateVersion = 7;

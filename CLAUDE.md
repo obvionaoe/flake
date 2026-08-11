@@ -40,9 +40,14 @@ of committing it, even if asked to "just add it quickly."
 Never commit, even temporarily:
 - Secrets, tokens, API keys, private keys, or credentials of any kind.
 - **Real names** or **personal/employer email addresses** — the one exception
-  is the intentional public identity already in `modules/shared/git`:
-  `obvionaoe` / `obvionaoe@protonmail.com`. No other name or address belongs
-  here, including any employer identity.
+  is the intentional public identity, declared by the `air` host as
+  `modules.git.userName` / `modules.git.userEmail`: `obvionaoe` /
+  `obvionaoe@protonmail.com`. No other name or address belongs here,
+  including any employer identity — the `work` host's git identity therefore
+  goes through `modules.git.identityFile` instead (see below). Commits to
+  `~/.flake` are pinned to the public identity on *every* host by an
+  `includeIf "gitdir:~/.flake/"` in `modules/shared/git`, so a work machine
+  can't accidentally author a commit here under its own identity.
 - Internal/employer hostnames, domains, or service URLs (e.g. anything like
   `*.internal`, a company's VPN/monitoring/git-mirror hosts).
 - IP addresses (homelab, cloud instances, VPNs) or SSH host maps that reveal
@@ -50,8 +55,12 @@ Never commit, even temporarily:
 - Hardware identifiers: disk/LUKS UUIDs, serial numbers, MAC addresses.
 
 If a module genuinely needs a sensitive value, don't inline it — use a proper
-secrets tool (`sops-nix`, `agenix`) or keep the value in a git-ignored local
-file, and ask before adding either. When porting *anything* in from an old,
+secrets tool (`sops-nix`, `agenix`) or keep the value in a file outside this
+repo, and ask before adding either. `modules/shared/git`'s `identityFile` is
+the worked example of the second approach: the host declares only a *path*
+(`~/.config/git/identity`), git pulls it in with `include.path`, and
+`scripts/bootstrap.sh` prompts for the values and writes that file on first
+run — the repo never sees them. When porting *anything* in from an old,
 private version of this config, scrub it for the above first — the source
 material is not held to this rule and cannot be trusted to be clean.
 

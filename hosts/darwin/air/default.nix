@@ -10,7 +10,11 @@
     android-studio.enable = true;
     zsh.enable = true;
     zoxide.enable = true;
-    git.enable = true;
+    git = {
+      enable = true;
+      userName = "obvionaoe";
+      userEmail = "obvionaoe@protonmail.com";
+    };
     direnv.enable = true;
     ghostty.enable = true;
     tmux.enable = true;
@@ -22,6 +26,7 @@
     nodejs.enable = true;
     bitwarden.enable = true;
     spotify.enable = true;
+    logi-options-plus.enable = true;
     whatsapp.enable = true;
     plex.enable = true;
     ungoogled-chromium.enable = true;
@@ -69,6 +74,8 @@
     microsoft-teams.enable = true;
     soloterm.enable = true;
   };
+
+  homebrew.onActivation.cleanup = "zap";
 
   system.stateVersion = 7;
 }

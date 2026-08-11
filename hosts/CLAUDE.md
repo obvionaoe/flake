@@ -24,6 +24,11 @@ Create `hosts/<platform>/<name>/default.nix`, set `nixpkgs.hostPlatform` and
 `modules.<name>.enable` flags it needs. Remember to `git add` the new
 directory — see root `CLAUDE.md`, untracked files are invisible to the flake.
 
+A host that enables `modules.git` must also give it an identity, or evaluation
+fails on an assertion: either `userName` + `userEmail` inline (public
+identities only) or `identityFile` pointing outside the repo. See
+"Public repository" in the root `CLAUDE.md` for which is which.
+
 ## The `user` module argument
 
 Every module takes `user` as a function argument (alongside `pkgs`, `lib`,

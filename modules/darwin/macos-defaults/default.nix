@@ -23,6 +23,11 @@ in {
         "com.apple.trackpad.scaling" = 1.0;
       };
 
+      # com.apple.mouse.scaling has no typed NSGlobalDomain option in this
+      # nix-darwin version (unlike trackpad.scaling above) — CustomUserPreferences
+      # is the freeform escape hatch for defaults keys nix-darwin doesn't model.
+      CustomUserPreferences.NSGlobalDomain."com.apple.mouse.scaling" = -1.0; # disable acceleration
+
       dock = {
         autohide = false;
         show-recents = false;
@@ -59,15 +64,15 @@ in {
     };
 
     system.activationScripts.postActivation.text = ''
-    # Following line should allow us to avoid a logout/login cycle when changing settings
-    sudo -u ${user} /System/Library/PrivateFrameworks/SystemAdministration.framework/Resources/activateSettings -u
+      # Following line should allow us to avoid a logout/login cycle when changing settings
+      sudo -u ${user} /System/Library/PrivateFrameworks/SystemAdministration.framework/Resources/activateSettings -u
 
-    # nix-darwin's power.sleep.display (systemsetup -setDisplaySleep) only
-    # ever affects AC power, even run manually with sudo — verified it
-    # silently leaves battery's value untouched. pmset -b/-c set each power
-    # source independently and actually work.
-    pmset -b displaysleep 5
-    pmset -c displaysleep 10
+      # nix-darwin's power.sleep.display (systemsetup -setDisplaySleep) only
+      # ever affects AC power, even run manually with sudo — verified it
+      # silently leaves battery's value untouched. pmset -b/-c set each power
+      # source independently and actually work.
+      pmset -b displaysleep 5
+      pmset -c displaysleep 10
     '';
   };
 }

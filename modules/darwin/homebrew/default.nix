@@ -31,5 +31,4 @@
   homebrew.enable = true;
   homebrew.enableZshIntegration = config.modules.zsh.enable;
   homebrew.taps = builtins.attrNames config.nix-homebrew.taps;
-  homebrew.onActivation.cleanup = "zap";
 }

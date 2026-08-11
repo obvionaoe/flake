@@ -24,6 +24,19 @@ must be run while logged into the macOS account that host declares as
 `system.primaryUser` (`obvionaoe` for `air`, `user` for `work`) — the bootstrap
 checks this and errors out early on a mismatch.
 
+Git identity is per-host. `air` declares its (public) name and email in the
+flake; `work` can't — a real name and employer address must not be committed
+here — so it declares only a path, `~/.config/git/identity`, that git pulls in
+via `include.path`. The bootstrap prompts for name and email and writes that
+file before the first `darwin-rebuild switch`, and leaves it alone if it
+already exists. Skipping the prompt just means git has no identity on that
+machine until the file is written by hand.
+
+Commits to `~/.flake` itself are always authored as `obvionaoe`, on every host —
+`modules/shared/git` adds an `includeIf "gitdir:~/.flake/"` that overrides the
+host's default identity for this repo only. So the work machine can manage this
+public repo without its commits carrying a work identity.
+
 Safe to re-run: if `~/.flake` already exists (e.g. a previous attempt failed
 partway through), it's fetched and hard-reset to `origin/main` rather than
 left as-is — the remote always wins, no manual deleting needed. If you're
