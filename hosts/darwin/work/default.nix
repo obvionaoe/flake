@@ -12,6 +12,10 @@
       # scripts/bootstrap.sh prompts for and writes on first run.
       identityFile = "~/.config/git/identity";
     };
+    # This host's ssh-agent holds a work key alongside the personal one used
+    # to push to public repos like this flake — see modules/shared/ssh for why
+    # that needs an explicit alias rather than plain git@github.com.
+    ssh.enable = true;
     direnv.enable = true;
     ghostty.enable = true;
     tmux.enable = true;
