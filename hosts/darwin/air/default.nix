@@ -22,6 +22,7 @@
     touchIdSudo.enable = true;
     skhd.enable = true;
     claude-code.enable = true;
+    decant.enable = true;
     vscode.enable = true;
     nodejs.enable = true;
     bitwarden.enable = true;
@@ -73,6 +74,7 @@
     obsidian.enable = true;
     microsoft-teams.enable = true;
     soloterm.enable = true;
+    bb.enable = true;
   };
 
   homebrew.onActivation.cleanup = "zap";
