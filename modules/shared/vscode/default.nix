@@ -44,6 +44,7 @@ in {
         userSettings =
           {
             "claudeCode.preferredLocation" = "panel";
+            "claudeCode.useTerminal" = true;
             "diffEditor.ignoreTrimWhitespace" = false;
 
             "editor.fontFamily" = "'JetBrainsMono Nerd Font', 'monospace', monospace";
