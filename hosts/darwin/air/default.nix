@@ -26,6 +26,7 @@
     vscode.enable = true;
     nodejs.enable = true;
     bitwarden.enable = true;
+    gnupg.enable = true;
     spotify.enable = true;
     logi-options-plus.enable = true;
     whatsapp.enable = true;

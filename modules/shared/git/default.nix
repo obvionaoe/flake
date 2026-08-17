@@ -1,10 +1,35 @@
 {
   config,
   lib,
+  pkgs,
   user,
   ...
 }: let
   cfg = config.modules.git;
+
+  # git has no native "sign if possible" mode: `commit.gpgsign = true` makes
+  # every commit hard-fail the moment no usable secret key is found (freshly
+  # bootstrapped host, smartcard unplugged, gpg-agent locked, ...). This
+  # pre-commit hook re-checks on every commit and flips the *local*
+  # commit.gpgsign accordingly, so signing happens whenever a key is
+  # available and silently falls back to unsigned otherwise, instead of
+  # blocking the commit.
+  #
+  # `flake.nosign` is an escape hatch for repos that must never be
+  # auto-signed regardless of key availability (see `flakeIdentity` below) —
+  # the hook writes straight to local repo config, which always outranks an
+  # `includeIf`, so without this check it would silently re-enable signing
+  # the moment a key exists.
+  gpgSignFallbackHook = pkgs.writeShellScript "git-gpgsign-fallback" ''
+    if [ "$(git config --get flake.nosign)" = "true" ]; then
+      exit 0
+    fi
+    if gpg --list-secret-keys --with-colons 2>/dev/null | grep -q '^sec'; then
+      git config commit.gpgsign true
+    else
+      git config commit.gpgsign false
+    fi
+  '';
 
   # Whichever of the two identity mechanisms this host uses, merged into
   # `programs.git.settings` below. Both halves are optional so a host declaring
@@ -23,7 +48,9 @@
   # Not per-host: commits to *this* repo are always authored by the public
   # identity, on every host. `work`'s default identity deliberately isn't in the
   # repo, but its commits here still have to be — so this overrides whatever the
-  # host's default identity is, for repos under `~/.flake` only.
+  # host's default identity is, for repos under `~/.flake` only. Signing is
+  # disabled here too — `flake.nosign` is checked by `gpgSignFallbackHook`
+  # above so a locally-available key doesn't get re-enabled on the next commit.
   #
   # home-manager renders `programs.git.includes` with `mkAfter`, i.e. after
   # everything in `settings`, and git config is last-wins — so this beats both
@@ -31,9 +58,13 @@
   # means home-manager generates the included file itself, in the store.
   flakeIdentity = {
     condition = "gitdir:~/.flake/";
-    contents.user = {
-      name = "obvionaoe";
-      email = "obvionaoe@protonmail.com";
+    contents = {
+      user = {
+        name = "obvionaoe";
+        email = "obvionaoe@protonmail.com";
+      };
+      commit.gpgsign = false;
+      flake.nosign = true;
     };
   };
 in {
@@ -129,6 +160,7 @@ in {
               autocrlf = "input";
               whitespace = "error";
             };
+            commit.gpgsign = true;
             http.sslVerify = "true";
             init.defaultBranch = "main";
             push.autoSetupRemote = "true";
@@ -140,6 +172,8 @@ in {
           // identity;
 
         includes = [flakeIdentity];
+
+        hooks.pre-commit = gpgSignFallbackHook;
 
         ignores = [
           "**.local.md"
