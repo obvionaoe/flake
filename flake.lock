@@ -32,6 +32,26 @@
         "type": "github"
       }
     },
+    "aps": {
+      "inputs": {
+        "nixpkgs": [
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "lastModified": 1787085958,
+        "narHash": "sha256-0rDcgqMz8Z4n+pkR3DfDcA3L1US6sWVz6EPo8GZcPU4=",
+        "owner": "obvionaoe",
+        "repo": "aps",
+        "rev": "ab28b4aeb47a2356c4b970db9ae04ee89ed94c57",
+        "type": "github"
+      },
+      "original": {
+        "owner": "obvionaoe",
+        "repo": "aps",
+        "type": "github"
+      }
+    },
     "axton-obsidian-visual-skills": {
       "flake": false,
       "locked": {
@@ -731,6 +751,7 @@
     },
     "root": {
       "inputs": {
+        "aps": "aps",
         "claude-code": "claude-code",
         "home-manager": "home-manager",
         "homebrew-cask": "homebrew-cask",

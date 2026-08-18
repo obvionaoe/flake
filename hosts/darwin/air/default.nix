@@ -29,6 +29,7 @@
     skhd.enable = true;
     claude-code.enable = true;
     decant.enable = true;
+    aps.enable = true;
     vscode.enable = true;
     nodejs.enable = true;
     bitwarden.enable = true;

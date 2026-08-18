@@ -31,6 +31,11 @@
       inputs.home-manager.follows = "home-manager";
     };
 
+    aps = {
+      url = "github:obvionaoe/aps";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+
     nix-darwin = {
       url = "github:nix-darwin/nix-darwin/nix-darwin-26.05";
       inputs.nixpkgs.follows = "nixpkgs";
