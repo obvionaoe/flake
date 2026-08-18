@@ -51,6 +51,19 @@
       flake = false;
     };
 
+    zsh-min-plus = {
+      url = "github:obvionaoe/zsh-min-plus";
+      flake = false;
+    };
+    zsh-f-sy-h = {
+      url = "github:z-shell/F-Sy-H";
+      flake = false;
+    };
+    zsh-async = {
+      url = "github:mafredri/zsh-async";
+      flake = false;
+    };
+
   };
 
   outputs = inputs @ {

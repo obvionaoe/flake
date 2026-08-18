@@ -3,9 +3,73 @@
   lib,
   pkgs,
   user,
+  zsh-min-plus,
+  zsh-f-sy-h,
+  zsh-async,
   ...
 }: let
   cfg = config.modules.zsh;
+
+  # One generated file: builds fpath, runs compinit once (cached), then
+  # sources every plugin by its resolved Nix store path. No plugin manager —
+  # no runtime git cloning (antidote used to clone into
+  # ~/Library/Caches/antidote, entirely outside Nix, requiring a manual
+  # `antidote update` to pick up upstream changes), no per-plugin
+  # loop/stat/source at every shell start (what home-manager's own
+  # `programs.zsh.plugins` does, and the actual cause of "home-manager zsh is
+  # slow" on NixOS). Every plugin here is either a nixpkgs package or a flake
+  # input (`zsh-min-plus`, `zsh-f-sy-h` — not in nixpkgs, or not the fork in
+  # use), so updates are ordinary `nix flake update <input>` / nixpkgs bumps,
+  # not something a shell has to notice and re-clone on its own.
+  zshPluginInit = pkgs.writeText "zsh-plugin-init.zsh" ''
+    # Schedules a command to run once zle is idle (in practice, within
+    # milliseconds of the first prompt) instead of blocking startup on it.
+    # Used below by modules/shared/{atuin,direnv,zoxide,fzf} to keep their
+    # `eval "$(<tool> init zsh)"` subprocess spawns off the startup path —
+    # those four `fork`+`exec`s are the actual dominant cost of shell
+    # startup, not plugin loading.
+    source ${pkgs.zsh-defer}/share/zsh-defer/zsh-defer.plugin.zsh
+
+    fpath=(
+      ${pkgs.zsh-completions}/share/zsh/site-functions
+      $fpath
+    )
+
+    # Full compinit at most once a day (mtime check below); `-C` (skip the
+    # security/staleness scan) the rest of the time, and the dump is
+    # zcompiled for a faster parse. A completion added to fpath won't show up
+    # until the cache expires — same tradeoff ez-compinit's own cache made.
+    autoload -Uz compinit
+    _zcompdump=${config.home-manager.users.${user}.xdg.cacheHome}/zsh/zcompdump
+    if [[ -n $_zcompdump(#qN.mh+24) ]]; then
+      compinit -d $_zcompdump
+      zcompile -R -- $_zcompdump
+    else
+      compinit -C -d $_zcompdump
+    fi
+    unset _zcompdump
+
+    # Order below is deliberate, per each plugin's own README: fzf-tab before
+    # the highlighter/autosuggestions (it must be the last thing to bind
+    # Tab), autopair before the highlighter (its own README asks for this),
+    # highlighter before autosuggestions. compinit must run before fzf-tab,
+    # since fzf-tab wraps the completion widget.
+    source ${pkgs.zsh-fzf-tab}/share/fzf-tab/fzf-tab.plugin.zsh
+    source ${pkgs.zsh-autopair}/share/zsh/zsh-autopair/autopair.zsh
+    source ${zsh-f-sy-h}/F-Sy-H.plugin.zsh
+    source ${pkgs.zsh-autosuggestions}/share/zsh/plugins/zsh-autosuggestions/zsh-autosuggestions.zsh
+    source ${pkgs.zsh-you-should-use}/share/zsh/plugins/you-should-use/you-should-use.plugin.zsh
+
+    # Prompt theme sourced directly (no promptinit/`prompt min_plus`) —
+    # benchmarked ~7ms/shell faster, since promptinit scans $fpath for every
+    # prompt_*_setup file (for `prompt -l`, unused here) and `prompt` has its
+    # own dispatch cost on top. See obvionaoe/zsh-min-plus for the
+    # promptinit-compatible entry point, kept there for other consumers.
+    # zsh-async is sourced first — the theme's vcs_info runs on an async
+    # worker rather than blocking every prompt on a synchronous git status.
+    source ${zsh-async}/async.zsh
+    source ${zsh-min-plus}/min-plus.zsh-theme
+  '';
 in {
   options.modules.zsh.enable = lib.mkEnableOption "zsh";
 
@@ -28,53 +92,6 @@ in {
 
         # Relative dotDir is deprecated by home-manager; use the absolute path.
         dotDir = "${config.home-manager.users.${user}.xdg.configHome}/zsh";
-
-        # Plugin management is entirely via antidote — no
-        # `programs.zsh.plugins`/`autosuggestion.enable`/
-        # `syntaxHighlighting.enable`/`completionInit` (emptied out below),
-        # any of which would either load a second, conflicting copy of
-        # something already listed here, or fight with mattmc3/ez-compinit
-        # over who owns `compinit`. Home-manager's antidote module resolves
-        # this list to a single static, content-hashed bundle file at
-        # *build* time (`antidote bundle` under the hood) instead of
-        # `source`-ing each plugin's files individually at every shell
-        # start.
-        #
-        # Order matches antidote's own official reference config
-        # (github.com/getantidote/zdotdir): ez-compinit first so its
-        # `compdef` shim is in place before anything else calls it — that
-        # shim is what lets every other plugin here load in one flat list
-        # regardless of order relative to `compinit` itself, since
-        # ez-compinit queues `compdef` calls and only fires the real
-        # `compinit` from a `precmd` hook (i.e. once the whole file,
-        # including every fpath addition below, has already run — see
-        # github.com/mattmc3/ez-compinit). Widget-wrapping plugins
-        # (autopair, fzf-tab, the syntax highlighter, autosuggestions) are
-        # still ordered deliberately at the tail, per their own READMEs:
-        # fzf-tab before the highlighter/autosuggestions (it must be the
-        # last thing to bind Tab), autopair before the highlighter (its own
-        # README asks for this), highlighter before autosuggestions.
-        antidote = {
-          enable = true;
-          useFriendlyNames = true;
-          plugins = [
-            "mattmc3/ez-compinit"
-            "zsh-users/zsh-completions kind:fpath path:src"
-            "Aloxaf/fzf-tab"
-            # Custom prompt (old flake built this as a Nix package from the
-            # same repo, `local.zsh.min-plus`; antidote can just clone it
-            # directly as a plugin, so no separate package/overlay is
-            # needed). kind:fpath only registers it for the
-            # promptinit/`prompt` theme system (see `prompt min_plus` in
-            # initContent below) — on its own it doesn't self-source, so
-            # this alone doesn't activate it.
-            "obvionaoe/zsh-min-plus kind:fpath"
-            "hlissner/zsh-autopair"
-            "z-shell/F-Sy-H"
-            "zsh-users/zsh-autosuggestions"
-            "MichaelAquilina/zsh-you-should-use"
-          ];
-        };
 
         autocd = true;
 
@@ -107,26 +124,20 @@ in {
           size = 1000000000;
         };
 
-        # ez-compinit (first antidote plugin above) fully owns `compinit`
-        # now — home-manager's own default
-        # (`autoload -U compinit && compinit`) would just duplicate/race it.
+        # zshPluginInit above fully owns `compinit` now — home-manager's own
+        # default (`autoload -U compinit && compinit`) would just
+        # duplicate/race it.
         completionInit = "";
 
         initContent = lib.mkMerge [
-          "autoload -Uz promptinit && promptinit && prompt min_plus"
           (lib.mkBefore (builtins.concatStringsSep "\n" [
             "setopt appendhistory beep promptsubst interactivecomments correct completealiases"
             "autoload -Uz colors && colors"
-            # ez-compinit's own dump cache (skips compinit's slow -C
-            # security/staleness check on repeat shells within 20h). Off by
-            # default upstream because it can mask a completion you just
-            # added to $fpath until the cache expires — worth remembering if
-            # a new completion doesn't show up right after a rebuild.
-            "zstyle ':plugin:ez-compinit' 'use-cache' 'yes'"
             "zstyle ':completion:*' menu select"
             "zstyle ':completion:*' rehash true"
             "zstyle ':completion:*' matcher-list '' 'm:{a-zA-Z}={A-Za-z}'"
           ]))
+          (lib.mkOrder 550 "source ${zshPluginInit}")
           (lib.mkOrder 1000 (builtins.concatStringsSep "\n" [
             "bindkey '5~' kill-word"
             "bindkey '^H' backward-kill-word"

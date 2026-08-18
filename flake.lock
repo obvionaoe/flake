@@ -742,7 +742,10 @@
         "nix-vscode-extensions": "nix-vscode-extensions",
         "nixpkgs": "nixpkgs",
         "nixpkgs-unstable": "nixpkgs-unstable",
-        "nur": "nur"
+        "nur": "nur",
+        "zsh-async": "zsh-async",
+        "zsh-f-sy-h": "zsh-f-sy-h",
+        "zsh-min-plus": "zsh-min-plus"
       }
     },
     "superpowers-marketplace": {
@@ -843,6 +846,54 @@
       "original": {
         "owner": "wakatime",
         "repo": "claude-code-wakatime",
+        "type": "github"
+      }
+    },
+    "zsh-async": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1672955751,
+        "narHash": "sha256-mkTmgSnfoZlTaOPhw0Y0yG1BkZv+oTo/eEisZZTN5nM=",
+        "owner": "mafredri",
+        "repo": "zsh-async",
+        "rev": "ee1d11b68c38dec24c22b1c51a45e8a815a79756",
+        "type": "github"
+      },
+      "original": {
+        "owner": "mafredri",
+        "repo": "zsh-async",
+        "type": "github"
+      }
+    },
+    "zsh-f-sy-h": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1779163744,
+        "narHash": "sha256-8+L5PfXurmxnrUCUmItNxtS4XaTzLoyOJM20qaNZHVM=",
+        "owner": "z-shell",
+        "repo": "F-Sy-H",
+        "rev": "e9f6487a654ae870154fd9e3384853f37ae01087",
+        "type": "github"
+      },
+      "original": {
+        "owner": "z-shell",
+        "repo": "F-Sy-H",
+        "type": "github"
+      }
+    },
+    "zsh-min-plus": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1787044736,
+        "narHash": "sha256-SR5OV36wxLYyLlyvh2IxVgvebQuD3aeerdZsTUqOKXE=",
+        "owner": "obvionaoe",
+        "repo": "zsh-min-plus",
+        "rev": "0736d4aaf32c6941c69b2c6134ee213cc4e1da21",
+        "type": "github"
+      },
+      "original": {
+        "owner": "obvionaoe",
+        "repo": "zsh-min-plus",
         "type": "github"
       }
     }
