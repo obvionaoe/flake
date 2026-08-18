@@ -26,7 +26,6 @@ in {
       };
 
       home.shellAliases = {
-        asp = ''_asp(){ export AWS_PROFILE="$1"; } && _asp'';
         gsp = ''_gsp(){ if [ -z "$1" ]; then gcloud config configurations activate default; else gcloud config configurations activate "$1"; fi } && _gsp'';
       };
     };
