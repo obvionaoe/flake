@@ -15,6 +15,12 @@
       userName = "obvionaoe";
       userEmail = "obvionaoe@protonmail.com";
     };
+    # Only one GitHub-relevant key on this host, so plain git@github.com can
+    # be pinned directly — no need for the work host's github-personal alias.
+    ssh = {
+      enable = true;
+      defaultIdentityFile = "~/.ssh/air";
+    };
     direnv.enable = true;
     ghostty.enable = true;
     tmux.enable = true;
