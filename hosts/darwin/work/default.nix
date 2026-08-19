@@ -34,7 +34,7 @@
     gnupg.enable = true;
     spotify.enable = true;
     ungoogled-chromium.enable = true;
-    logi-options-plus.enable = true;
+    openlogi.enable = true;
 
     fonts.enable = true;
     macos-defaults.enable = true;
