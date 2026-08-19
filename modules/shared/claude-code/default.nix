@@ -58,9 +58,28 @@ in {
 
       programs.claude = {
         enable = true;
-        # No `package` override needed — the overlay above already made
-        # pkgs.claude-code (this module's default) the fresh build.
-        #
+
+        # Wraps the real `claude` binary in `direnv exec`, so any launcher
+        # that execs `claude` directly instead of through an interactive
+        # shell (soloterm does this) still gets direnv's env — including
+        # `use nix`/`use flake` — applied first. `direnv exec DIR CMD` loads
+        # DIR's .envrc (or is a harmless passthrough if there isn't one) and
+        # then execs CMD with that env, so this is correct both inside and
+        # outside a direnv-managed project, and adds nothing beyond one
+        # extra fork+exec in an interactive shell that already ran direnv's
+        # own zsh hook (modules/shared/direnv). `lib.getExe` resolves each
+        # package's mainProgram to its store path, so the wrapper calls the
+        # real binary directly — no PATH lookup, no recursion into itself
+        # despite sharing the name `claude`. Only `home.packages` (via
+        # nix-claude-code's `core.nix`) reads this option, so overriding it
+        # doesn't disturb settings/hooks/statusline generation elsewhere.
+        package = lib.mkIf config.modules.direnv.enable (
+          pkgs.writeShellScriptBin "claude" ''
+            set -euo pipefail
+            exec ${lib.getExe pkgs.direnv} exec "$PWD" ${lib.getExe pkgs.claude-code} "$@"
+          ''
+        );
+
         # Note: `programs.claude.latest` (the official curl|bash installer,
         # which would shadow this Nix-managed binary on PATH) only exists
         # when nix-claude-code.homeModules.latest is imported — it isn't
