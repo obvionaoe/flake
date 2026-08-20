@@ -75,5 +75,17 @@
     bb.enable = true;
   };
 
+  # MDM-managed (Apple Business Essentials, user-approved enrollment) Mac App
+  # Store apps, provisioned automatically rather than installed by hand.
+  # Declaring them here is a documentation/future-proofing measure, not
+  # active protection — see modules/darwin/homebrew's note on why
+  # homebrew.masApps is already exempt from zap cleanup.
+  homebrew.masApps = {
+    Business = 1588151344;
+    "Keeper Password Manager" = 414781829;
+    Slack = 803453959;
+    Twingate = 1501592214;
+  };
+
   system.stateVersion = 7;
 }

@@ -85,7 +85,5 @@
     bb.enable = true;
   };
 
-  homebrew.onActivation.cleanup = "zap";
-
   system.stateVersion = 7;
 }
