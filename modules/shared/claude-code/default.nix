@@ -95,6 +95,15 @@ in {
           permissions.deny = [];
         };
 
+        # nix-claude-code strips and fully regenerates settings.json's
+        # `enabledPlugins` from this option on every activation (same
+        # mechanism as permissions.allow/ask/deny above) — a plugin
+        # installed at runtime via `/plugin install` isn't durable unless
+        # it's also declared here, or the next rebuild silently disables it.
+        plugins.enabled = {
+          "mattpocock-skills@claude-plugins-official" = true;
+        };
+
         # Connect every session to Remote Control (mobile/companion) at
         # startup by default, rather than needing `/remote-control` (or
         # equivalent) each session. Stored in ~/.claude.json, not
