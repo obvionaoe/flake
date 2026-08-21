@@ -1,0 +1,127 @@
+diff --git a/crates/openlogi-hid/src/gesture.rs b/crates/openlogi-hid/src/gesture.rs
+index ba9d6d8..5177b35 100644
+--- a/crates/openlogi-hid/src/gesture.rs
++++ b/crates/openlogi-hid/src/gesture.rs
+@@ -18,7 +18,12 @@
+ 
+ use std::sync::{Arc, Mutex, PoisonError, RwLock};
+ 
+-use hidpp::{channel::HidppChannel, device::Device, protocol::v20};
++use hidpp::{
++    channel::HidppChannel,
++    device::Device,
++    feature::{CreatableFeature, root::RootFeature},
++    protocol::v20,
++};
+ use openlogi_core::binding::{ButtonId, GestureDirection, SwipeAccumulator};
+ use serde::{Deserialize, Serialize};
+ use thiserror::Error;
+@@ -30,6 +35,27 @@ use crate::route::{DeviceRoute, open_route_channel};
+ use crate::thumbwheel::{self, Thumbwheel};
+ use crate::write::SharedChannel;
+ 
++/// How often the capture session pings its device to prove the channel still
++/// delivers input reports. Cheap: one HID++ round-trip per interval.
++const LIVENESS_PING_INTERVAL: std::time::Duration = std::time::Duration::from_secs(20);
++
++/// Consecutive all-silent pings after which the capture channel is declared
++/// dead. Two, so one ping lost to transient receiver congestion (which does
++/// happen under pointer load) doesn't churn the session.
++const LIVENESS_PING_STRIKES: u8 = 2;
++
++/// Magnitude (raw-XY units, either axis) above which a raw-XY sample from the
++/// gesture button/panel is treated as a jump artifact — an absolute-position
++/// glitch, not a delta — rather than real motion. A whole deliberate swipe
++/// totals a few hundred units; observed contact-jump artifacts on real MX
++/// Master 4 hardware run from the low thousands to the low tens of
++/// thousands. Applied to every sample of a hold, not only its leading ones:
++/// a jump has been observed several samples into an otherwise-clean hold,
++/// not just as the very first sample after contact. A sample past this
++/// bound is never real, physically-possible travel in one ~8ms tick, so
++/// there's no legitimate motion this costs.
++const RAW_XY_JUMP_THRESHOLD: u16 = 250;
++
+ /// Shared slot holding the active capture session's open channel, so DPI /
+ /// SmartShift writes can reuse it instead of opening a fresh one. `None`
+ /// whenever no session is connected.
+@@ -201,7 +227,47 @@ pub async fn run_capture_session(
+         thumbwheel = armed.thumb.is_some(),
+         "control capture active"
+     );
+-    let _ = shutdown.await;
++
++    // Liveness watchdog: this session's channel is the sole delivery path for
++    // every diverted control, and a channel whose input-report delivery dies
++    // (observed on macOS with concurrent opens of one node: writes accepted,
++    // replies and events silently routed elsewhere — and after a Bluetooth-
++    // direct device's sleep/wake cycle, where the OS reports the device
++    // present again before the old channel's report delivery has actually
++    // recovered) turns every captured button to dead air with nothing to
++    // notice. Ping the device through this channel; consecutive all-silent
++    // pings mean the channel — not the device — is gone (a sleeping/
++    // unreachable device still gets us an error *reply*, which proves
++    // delivery and resets the count). Exiting lets the manager re-arm on a
++    // fresh channel.
++    let root = <RootFeature as CreatableFeature>::new(Arc::clone(&chan), device_index, 0);
++    let mut shutdown = std::pin::pin!(shutdown);
++    let mut silent_pings = 0u8;
++    let channel_dead = loop {
++        tokio::select! {
++            _ = &mut shutdown => break false,
++            () = tokio::time::sleep(LIVENESS_PING_INTERVAL) => {
++                match root.ping(0x5a).await {
++                    Err(v20::Hidpp20Error::Channel(
++                        hidpp::channel::ChannelError::Timeout
++                        | hidpp::channel::ChannelError::NoResponse,
++                    )) => {
++                        silent_pings = silent_pings.saturating_add(1);
++                        if silent_pings >= LIVENESS_PING_STRIKES {
++                            warn!(
++                                index = device_index,
++                                "capture channel stopped delivering — restarting session on a fresh channel"
++                            );
++                            break true;
++                        }
++                    }
++                    // Any reply — pong, feature error, unreachable-device
++                    // error — proves the channel still delivers.
++                    _ => silent_pings = 0,
++                }
++            }
++        }
++    };
+ 
+     drop(listener);
+     // The slot is one last-writer-wins cell shared by every session, so a
+@@ -216,7 +282,14 @@ pub async fn run_capture_session(
+     {
+         *slot = None;
+     }
+-    armed.disarm().await;
++    if channel_dead {
++        // Disarm writes would each burn a timeout on a channel that no longer
++        // answers, and the replacement session re-arms the same diverts
++        // anyway; leave the device state for it.
++        debug!(index = device_index, "skipping disarm on a dead channel");
++    } else {
++        armed.disarm().await;
++    }
+     debug!(index = device_index, "control capture stopped");
+     Ok(())
+ }
+@@ -491,6 +564,15 @@ fn handle_reprog(
+             }
+         }
+         RawControlEvent::RawXy { dx, dy } => {
++            // The gesture button/panel occasionally reports an
++            // absolute-position jump instead of a delta. Summing one would
++            // let it single-handedly commit a bogus direction before real
++            // motion is ever read, so any sample whose magnitude alone is
++            // physically implausible for a swipe is dropped outright.
++            if dx.unsigned_abs().max(dy.unsigned_abs()) > RAW_XY_JUMP_THRESHOLD {
++                debug!(dx, dy, "gesture: discarded contact-jump sample");
++                return;
++            }
+             // Commit the instant a clean direction emerges (mid-swipe, once per
+             // hold); the accumulator gates on hold duration internally and drops
+             // travel that arrives outside a hold.
