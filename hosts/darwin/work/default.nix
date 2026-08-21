@@ -32,6 +32,8 @@
     nodejs.enable = true;
     bitwarden.enable = true;
     gnupg.enable = true;
+    secretspec.enable = true;
+    doppler.enable = true; # temporary, remove when done trying it out
     spotify.enable = true;
     ungoogled-chromium.enable = true;
     openlogi.enable = true;
