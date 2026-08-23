@@ -13,10 +13,17 @@
       identityFile = "~/.config/git/identity";
     };
     # This host's ssh-agent holds a work key alongside the personal one used
-    # to push to public repos like this flake — see modules/shared/ssh for why
-    # that needs an explicit alias rather than plain git@github.com.
+    # to push to public repos like this flake. Without defaultIdentityFile,
+    # plain git@github.com just offers whatever the agent happens to hold —
+    # confirmed live to silently authenticate as the personal obvionaoe
+    # identity instead of the work one whenever the personal key was the one
+    # actually loaded, with no error or warning to notice it by. Pinning
+    # plain git@github.com to the work key here makes that deterministic
+    # regardless of agent state; github-personal stays as the explicit
+    # opt-in alias for pushing to public repos like this flake.
     ssh = {
       enable = true;
+      defaultIdentityFile = "~/.ssh/work";
       githubPersonal.enable = true;
     };
     direnv.enable = true;
