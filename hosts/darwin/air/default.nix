@@ -85,5 +85,10 @@
     bb.enable = true;
   };
 
+  # Air-only: don't mention Claude in commits (no "Co-Authored-By: Claude"
+  # trailer or "Generated with Claude Code" line). Left at the module
+  # default (on) on the work host.
+  home-manager.users.${user}.programs.claude.settings.includeCoAuthoredBy = false;
+
   system.stateVersion = 7;
 }
