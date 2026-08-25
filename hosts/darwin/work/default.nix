@@ -73,6 +73,7 @@
     };
     go.enable = true;
     python.enable = true;
+    jdk.enable = true;
     nixd.enable = true;
     data-processors.enable = true;
     formatters.enable = true;
