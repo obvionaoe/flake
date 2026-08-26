@@ -7,7 +7,7 @@
 }: let
   cfg = config.modules.databases;
 in {
-  options.modules.databases.enable = lib.mkEnableOption "database client tools (postgresql)";
+  options.modules.databases.enable = lib.mkEnableOption "database client tools (postgresql, dbmate)";
 
   config = lib.mkIf cfg.enable {
     # `postgresql` is the full package (server included) rather than a
@@ -16,6 +16,6 @@ in {
     # MySQL client tooling was dropped: nixpkgs removed real MySQL entirely
     # (mysql80 EOL'd 2026-04-30) and only offers mariadb.client as a
     # wire-compatible substitute, which isn't actually MySQL.
-    home-manager.users.${user}.home.packages = with pkgs; [postgresql];
+    home-manager.users.${user}.home.packages = with pkgs; [postgresql dbmate];
   };
 }
