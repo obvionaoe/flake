@@ -32,7 +32,7 @@
     neovim.enable = true;
     touchIdSudo.enable = true;
     skhd.enable = true;
-    claude-code.enable = true;
+    agents.enable = true;
     decant.enable = true;
     aps.enable = true;
     vscode.enable = true;
