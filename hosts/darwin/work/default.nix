@@ -82,7 +82,7 @@
     firefox.enable = true;
     obsidian.enable = true;
     soloterm.enable = true;
-    bb.enable = true;
+    datagrip.enable = true;
   };
 
   # MDM-managed (Apple Business Essentials, user-approved enrollment) Mac App

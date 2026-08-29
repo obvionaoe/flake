@@ -82,7 +82,6 @@
     obsidian.enable = true;
     microsoft-teams.enable = true;
     soloterm.enable = true;
-    bb.enable = true;
   };
 
   # Air-only: don't mention Claude in commits (no "Co-Authored-By: Claude"
