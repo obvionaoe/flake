@@ -44,6 +44,7 @@
     spotify.enable = true;
     ungoogled-chromium.enable = true;
     openlogi.enable = true;
+    nix-gc.enable = true;
 
     fonts.enable = true;
     macos-defaults.enable = true;

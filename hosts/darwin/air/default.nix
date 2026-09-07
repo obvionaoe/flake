@@ -43,6 +43,7 @@
     steam.enable = true;
     parsec.enable = true;
     geforce-now.enable = true;
+    nix-gc.enable = true;
 
     fonts.enable = true;
     macos-defaults.enable = true;
