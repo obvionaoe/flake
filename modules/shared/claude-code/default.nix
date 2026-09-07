@@ -11,7 +11,37 @@
 in {
   options.modules.claude-code.enable = lib.mkEnableOption "Claude Code";
 
-  config = lib.mkIf cfg.enable {
+  config = lib.mkIf cfg.enable (let
+    # Must match flake.nix's `claude-code` input (`sadjow/claude-code-nix`) —
+    # used below to query the latest upstream version directly, bypassing
+    # this flake's lock, for the `claude update` check.
+    claudeCodeFlakeRef = "github:sadjow/claude-code-nix";
+
+    # `claude update`: read-only. Compares the currently-locked
+    # `pkgs.claude-code.version` (baked in at eval time) against whatever
+    # version the flake resolves to right now upstream, and just reports
+    # it — no flake.lock write, no rebuild.
+    claudeCheckUpdate = pkgs.writeShellScriptBin "claude-check-update" ''
+      set -euo pipefail
+      system="$(nix eval --raw --impure --expr builtins.currentSystem)"
+      current="${pkgs.claude-code.version}"
+      latest="$(nix eval --refresh --raw "${claudeCodeFlakeRef}#packages.$system.default.version")"
+      if [ "$current" = "$latest" ]; then
+        echo "claude-code is up to date ($current)"
+      else
+        echo "claude-code $current -> $latest available (run \`claude upgrade\` to update)"
+      fi
+    '';
+
+    # `claude upgrade`: bump only the Claude Code CLI input, then rebuild
+    # this host. `nix flake update` runs as the user (writes flake.lock);
+    # only the switch needs root, so sudo is scoped to that half.
+    claudeUpgrade = pkgs.writeShellScriptBin "claude-upgrade" ''
+      set -euo pipefail
+      nix flake update claude-code --flake "$HOME/.flake"
+      sudo darwin-rebuild switch --flake "$HOME/.flake#${config.networking.hostName}"
+    '';
+  in {
     modules.rtk.enable = lib.mkDefault true;
 
     # claude-code-nix (the `claude-code` flake input) checks npm hourly
@@ -44,41 +74,44 @@ in {
       # "importing a module costs nothing" rule (modules/CLAUDE.md).
       imports = [nix-claude-code.homeModules.default];
 
-      # `claude-update`: bump only the Claude Code CLI input, then rebuild
-      # this host. A real binary on PATH (not a shell alias) so it works in
-      # any shell. `nix flake update` runs as the user (writes flake.lock);
-      # only the switch needs root, so sudo is scoped to that half.
-      home.packages = [
-        (pkgs.writeShellScriptBin "claude-update" ''
-          set -euo pipefail
-          nix flake update claude-code --flake "$HOME/.flake"
-          sudo darwin-rebuild switch --flake "$HOME/.flake"
-        '')
-      ];
-
       programs.claude = {
         enable = true;
 
-        # Wraps the real `claude` binary in `direnv exec`, so any launcher
-        # that execs `claude` directly instead of through an interactive
-        # shell (soloterm does this) still gets direnv's env — including
-        # `use nix`/`use flake` — applied first. `direnv exec DIR CMD` loads
+        # `claude update`/`claude upgrade` are always intercepted here,
+        # instead of being passed through to the real `claude` binary
+        # (which has no such subcommand) — this doesn't depend on direnv.
+        # `update` only checks and reports the latest available version;
+        # `upgrade` actually bumps the flake input and rebuilds.
+        #
+        # For any other invocation: when direnv is enabled, wraps the real
+        # `claude` binary in `direnv exec`, so any launcher that execs
+        # `claude` directly instead of through an interactive shell
+        # (soloterm does this) still gets direnv's env — including `use
+        # nix`/`use flake` — applied first. `direnv exec DIR CMD` loads
         # DIR's .envrc (or is a harmless passthrough if there isn't one) and
         # then execs CMD with that env, so this is correct both inside and
         # outside a direnv-managed project, and adds nothing beyond one
         # extra fork+exec in an interactive shell that already ran direnv's
-        # own zsh hook (modules/shared/direnv). `lib.getExe` resolves each
-        # package's mainProgram to its store path, so the wrapper calls the
-        # real binary directly — no PATH lookup, no recursion into itself
-        # despite sharing the name `claude`. Only `home.packages` (via
-        # nix-claude-code's `core.nix`) reads this option, so overriding it
-        # doesn't disturb settings/hooks/statusline generation elsewhere.
-        package = lib.mkIf config.modules.direnv.enable (
-          pkgs.writeShellScriptBin "claude" ''
-            set -euo pipefail
-            exec ${lib.getExe pkgs.direnv} exec "$PWD" ${lib.getExe pkgs.claude-code} "$@"
-          ''
-        );
+        # own zsh hook (modules/shared/direnv). When direnv is disabled,
+        # the real binary is exec'd directly instead. `lib.getExe` resolves
+        # each package's mainProgram to its store path, so the wrapper calls
+        # the real binary directly — no PATH lookup, no recursion into
+        # itself despite sharing the name `claude`. Only `home.packages`
+        # (via nix-claude-code's `core.nix`) reads this option, so
+        # overriding it doesn't disturb settings/hooks/statusline
+        # generation elsewhere.
+        package = pkgs.writeShellScriptBin "claude" ''
+          set -euo pipefail
+          case "''${1:-}" in
+            update)
+              exec ${lib.getExe claudeCheckUpdate}
+              ;;
+            upgrade)
+              exec ${lib.getExe claudeUpgrade}
+              ;;
+          esac
+          exec ${lib.optionalString config.modules.direnv.enable ''${lib.getExe pkgs.direnv} exec "$PWD" ''}${lib.getExe pkgs.claude-code} "$@"
+        '';
 
         # Note: `programs.claude.latest` (the official curl|bash installer,
         # which would shadow this Nix-managed binary on PATH) only exists
@@ -111,5 +144,5 @@ in {
         remoteControlAtStartup = true;
       };
     };
-  };
+  });
 }
