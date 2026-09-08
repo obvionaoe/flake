@@ -125,7 +125,11 @@ in {
         # so it's safe (and worth) declaring here.
         settings = {
           env = {};
-          permissions.deny = [];
+          # `Agent(fork)` blocks the fork subagent specifically (it inherits
+          # full conversation context and runs on this session's model,
+          # unlike other subagent types) — Claude should use the Agent tool
+          # with a non-fork subagent_type instead.
+          permissions.deny = ["Agent(fork)"];
         };
 
         # nix-claude-code strips and fully regenerates settings.json's
