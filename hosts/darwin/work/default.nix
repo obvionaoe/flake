@@ -84,6 +84,7 @@
     obsidian.enable = true;
     soloterm.enable = true;
     datagrip.enable = true;
+    headroom-proxy.enable = false;
   };
 
   # MDM-managed (Apple Business Essentials, user-approved enrollment) Mac App
