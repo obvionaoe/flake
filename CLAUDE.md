@@ -66,10 +66,18 @@ material is not held to this rule and cannot be trusted to be clean.
 
 ## Ground rules (apply everywhere in this repo)
 
+- **Every change to the system goes through the flake, never ad hoc.** If a
+  file on disk is home-manager/nix-darwin-managed (symlinked into
+  `/nix/store`, e.g. `~/.ssh/config`), don't edit it directly — trace it back
+  to the module that generates it (`grep` the setting/host/path across
+  `modules/`) and change the source there instead. An ad hoc edit to a
+  generated file is silently overwritten on the next rebuild and never
+  reaches the public repo or any other host.
 - **Never run `darwin-rebuild`, `nixos-rebuild`, `nix build`, `home-manager switch`,
   or any other command that builds/activates/switches system state.** Always hand
   the exact command back to the person to run themselves — they need to review
-  the diff and be the one applying changes to their own machine.
+  the diff and be the one applying changes to their own machine, explicitly and
+  on their own initiative, never as a follow-on step Claude takes automatically.
 - **Git-tracked files only**: Nix flakes only see files tracked by git. A new
   host or module directory is invisible to the flake until it's at least
   `git add`ed (staged is enough, doesn't need to be committed) — this fails
