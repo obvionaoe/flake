@@ -60,9 +60,22 @@ in {
     })
 
     (lib.mkIf (cfg.enable && cfg.defaultIdentityFile != null) {
-      home-manager.users.${user}.programs.ssh.settings."github.com" = {
-        IdentityFile = cfg.defaultIdentityFile;
-        IdentitiesOnly = true;
+      # ControlMaster/ControlPath/ControlPersist let the first SSH connection
+      # to github.com stay open and get reused by every subsequent SSH-based
+      # git operation (fetch/push/pull, hooks that shell out to git, etc.)
+      # instead of paying a full handshake (~2-3s) each time. `home.file`
+      # below creates the socket directory declaratively, since ControlPath
+      # requires it to exist before the first connection.
+      home-manager.users.${user} = {
+        programs.ssh.settings."github.com" = {
+          IdentityFile = cfg.defaultIdentityFile;
+          IdentitiesOnly = true;
+          ControlMaster = "auto";
+          ControlPath = "~/.ssh/sockets/%r@%h-%p";
+          ControlPersist = "10m";
+        };
+
+        home.file.".ssh/sockets/.keep".text = "";
       };
     })
 
