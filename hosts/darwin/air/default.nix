@@ -57,6 +57,7 @@
     forgit.enable = true;
     cli-misc.enable = true;
     pkgs-update.enable = true;
+    llmfit.enable = true;
 
     kubernetes = {
       enable = true;
