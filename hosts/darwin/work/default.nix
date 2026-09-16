@@ -58,6 +58,7 @@
     cli-misc.enable = true;
     pkgs-update.enable = true;
     llmfit.enable = true;
+    security-tools.enable = true;
 
     kubernetes = {
       enable = true;
