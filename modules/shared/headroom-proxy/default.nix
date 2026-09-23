@@ -21,6 +21,22 @@
   # ANTHROPIC_BASE_URL below — one binding so the two can't drift apart.
   proxyPort = 8787;
   proxyBaseUrl = "http://127.0.0.1:${toString proxyPort}";
+
+  # On Darwin the `docker` CLI comes from the Docker Desktop cask
+  # (modules/darwin/containers), not nixpkgs, and its actual location isn't
+  # fixed: Docker Desktop's current default is `~/.docker/bin` (which it
+  # normally self-adds to PATH, an edit home-manager's zsh module would wipe
+  # out again on the next activation — modules/darwin/containers'
+  # `home.sessionPath` is what actually keeps it on PATH here), but an
+  # existing install may instead have it in `/usr/local/bin` from Docker
+  # Desktop's own "Install CLI symlinks in /usr/local/bin" Advanced setting.
+  # Rather than pinning to one (and getting it wrong again — this used to
+  # assume nix-darwin's `config.homebrew.prefix`, which isn't even where
+  # Docker Desktop puts its CLI), list every plausible location on PATH and
+  # let plain `docker` resolve via lookup, the same as an interactive shell
+  # would. Only used inside the launchd block below, which is itself already
+  # guarded by `pkgs.stdenv.isDarwin`.
+  dockerCliPaths = ["/Users/${user}/.docker/bin" "/usr/local/bin" "/opt/homebrew/bin"];
 in {
   options.modules.headroom-proxy = {
     enable = lib.mkEnableOption "always-on Headroom proxy (Docker, localhost-only)";
@@ -50,8 +66,8 @@ in {
   };
 
   config = lib.mkIf cfg.enable {
-    # docker CLI + colima daemon — see modules/shared/containers and
-    # modules/darwin/containers.
+    # docker CLI + daemon (Docker Desktop on Darwin) — see
+    # modules/shared/containers and modules/darwin/containers.
     modules.containers.enable = lib.mkDefault true;
     # So there's something to point at the proxy below without a second,
     # separate opt-in — same cross-module-default pattern as
@@ -120,24 +136,27 @@ in {
               if [ -f "${cfg.envFile}" ]; then
                 set -- "$@" --env-file "${cfg.envFile}"
               fi
-              exec "${pkgs.docker}/bin/docker" run "$@" ${cfg.image} headroom proxy --host 0.0.0.0 --port ${toString proxyPort}
+              exec docker run "$@" ${cfg.image} headroom proxy --host 0.0.0.0 --port ${toString proxyPort}
             ''
           ];
           RunAtLoad = true;
           # `docker run` here is a foreground, blocking process (not `-d`),
           # so KeepAlive supervises the container's whole lifetime the same
           # way it would a plain binary — and doubles as a retry loop for
-          # the startup race against colima's own launchd job (see
-          # modules/darwin/containers): if the Docker daemon isn't up yet,
-          # `docker run` just fails fast and gets relaunched.
+          # the startup race against Docker Desktop's own login-time launch
+          # (see modules/darwin/containers): if the Docker daemon isn't up
+          # yet, `docker run` just fails fast and gets relaunched.
           KeepAlive = true;
           EnvironmentVariables = {
-            # colima writes its docker context here; without it `docker`
-            # falls back to a default context with no daemon behind it (no
-            # Docker Desktop installed) — see modules/darwin/containers for
-            # the same requirement on colima's own launchd job.
+            # Same XDG relocation + fixed-socket pairing as
+            # modules/shared/containers: DOCKER_CONFIG moves the CLI's own
+            # config XDG-ward, and DOCKER_HOST bypasses context resolution
+            # (which would otherwise look for a `desktop-linux` context
+            # Docker Desktop only ever writes into the default, unrelocated
+            # ~/.docker/config.json — see modules/darwin/containers).
             DOCKER_CONFIG = "${config.home-manager.users.${user}.xdg.configHome}/docker";
-            PATH = "${pkgs.docker}/bin:/usr/bin:/bin:/usr/sbin:/sbin";
+            DOCKER_HOST = "unix:///Users/${user}/.docker/run/docker.sock";
+            PATH = "${lib.concatStringsSep ":" dockerCliPaths}:/usr/bin:/bin:/usr/sbin:/sbin";
           };
           StandardOutPath = "/Users/${user}/Library/Logs/headroom-proxy.log";
           StandardErrorPath = "/Users/${user}/Library/Logs/headroom-proxy.err.log";

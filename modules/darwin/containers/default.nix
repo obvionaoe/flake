@@ -1,7 +1,6 @@
 {
   config,
   lib,
-  pkgs,
   user,
   ...
 }: let
@@ -12,62 +11,44 @@ in {
   # Darwin-only daemon half. See modules/CLAUDE.md's coupled-module split.
 
   config = lib.mkIf cfg.enable {
+    # Provides both the docker daemon (via Docker Desktop's own VM) and its
+    # own `docker` CLI — nixpkgs has no macOS-native docker daemon, and
+    # Docker Desktop isn't in nixpkgs at all (proprietary, Homebrew-cask
+    # only). Docker Desktop's CLI is what modules/shared/containers'
+    # `docker` shell alias resolves to on Darwin — that module skips
+    # installing nixpkgs' `docker` there so there's only one `docker`
+    # binary on PATH. The CLI's own config (credentials, plugins) still
+    # gets XDG-relocated via DOCKER_CONFIG there, same as any other
+    # platform — only Docker Desktop's *own* GUI/daemon state (the
+    # `desktop-linux` context, its runtime socket) stays at the fixed
+    # ~/.docker location it insists on regardless (upstream doesn't honor
+    # DOCKER_CONFIG for that half: docker/for-mac#2635, #6150), which is
+    # why modules/shared/containers also pins DOCKER_HOST straight at
+    # Docker Desktop's fixed socket rather than relying on a context
+    # lookup in the relocated config.
+    homebrew.casks = ["docker-desktop"];
+
     home-manager.users.${user} = {
-      # Provides the actual docker daemon (via a Lima VM) that the `docker`
-      # CLI installed in modules/shared/containers needs — nixpkgs has no
-      # macOS-native docker daemon, and Docker Desktop isn't in nixpkgs at
-      # all (proprietary, Homebrew-cask only). Colima is itself in nixpkgs
-      # (tier 2), so it's preferred over reaching for a cask.
-      home.packages = [pkgs.colima];
-
-      # colima defaults its own state dir to ~/.colima, unless
-      # $XDG_CONFIG_HOME is set — but only in the *absence* of a
-      # pre-existing ~/.colima, which it otherwise falls back to for
-      # backward compat while ignoring $XDG_CONFIG_HOME entirely (with a
-      # warning). $XDG_CONFIG_HOME is also only ever exported into
-      # interactive shells (via home-manager's session vars), never into
-      # launchd's environment, so the launchd job below would silently
-      # resolve to a different state dir than interactive `colima`
-      # commands. Pin COLIMA_HOME explicitly everywhere instead — unlike
-      # $XDG_CONFIG_HOME, it always takes precedence over the ~/.colima
-      # fallback — so both contexts agree on the same instance.
-      home.sessionVariables = {
-        COLIMA_HOME = "${config.home-manager.users.${user}.xdg.configHome}/colima";
-      };
-
-      # `colima start` boots the VM and returns once it's up, so a plain
-      # `KeepAlive = true` would spin it in a restart loop on every
-      # successful exit. `SuccessfulExit = false` instead only re-runs it
-      # after a failed start (e.g. a boot-time race). `colima start` is
-      # idempotent — a no-op if the VM is already up — so StartInterval
-      # lets launchd periodically re-invoke it to self-heal if the VM
-      # itself later crashes, which the one-shot process exiting 0
-      # wouldn't otherwise let launchd detect.
-      launchd.agents.colima = {
-        enable = true;
-        config = {
-          ProgramArguments = ["${pkgs.colima}/bin/colima" "start"];
-          RunAtLoad = true;
-          KeepAlive = {
-            SuccessfulExit = false;
-          };
-          StartInterval = 300;
-          EnvironmentVariables = {
-            DOCKER_CONFIG = "${config.home-manager.users.${user}.xdg.configHome}/docker";
-            COLIMA_HOME = "${config.home-manager.users.${user}.xdg.configHome}/colima";
-            # launchd jobs get macOS's bare minimal PATH
-            # (/usr/bin:/bin:/usr/sbin:/sbin), which doesn't include the
-            # nix-installed `docker` CLI. `colima start` shells out to
-            # look up `docker` as a dependency check on every *actual*
-            # cold start (a fast path for an already-running VM skips
-            # it) — without this, that check fails and the VM never
-            # comes back up after a real crash.
-            PATH = "${pkgs.docker}/bin:/usr/bin:/bin:/usr/sbin:/sbin";
-          };
-          StandardOutPath = "/Users/${user}/Library/Logs/colima.log";
-          StandardErrorPath = "/Users/${user}/Library/Logs/colima.err.log";
-        };
-      };
+      # Docker Desktop's CLI symlinks default to ~/.docker/bin (its own
+      # first-run setup, not something Homebrew/this flake controls) — it
+      # normally self-adds that to PATH by editing the shell profile
+      # directly, but home-manager's zsh module (modules/shared/zsh)
+      # regenerates that profile from Nix on every activation and would
+      # silently drop that edit again on the next switch. Declaring it here
+      # instead makes it survive rebuilds. `/usr/local/bin` is also already
+      # on macOS's default PATH regardless (via /etc/paths) and is where an
+      # existing install may have put the symlinks instead, if "Install CLI
+      # symlinks in /usr/local/bin" was ever enabled in Docker Desktop's
+      # Advanced settings — either way `docker` still resolves.
+      home.sessionPath = ["${config.home-manager.users.${user}.home.homeDirectory}/.docker/bin"];
     };
+
+    # Docker Desktop's own "Start Docker Desktop when you log in" preference
+    # (on by default once it's been launched once) is what keeps the daemon
+    # running across reboots — there's no nix-darwin equivalent to declare
+    # that non-interactively, so this needs a one-time manual check in
+    # Docker Desktop's Settings > General after the first `darwin-rebuild
+    # switch` installs the cask. This replaces the colima launchd agent that
+    # used to live here.
   };
 }
