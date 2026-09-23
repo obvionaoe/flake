@@ -33,9 +33,11 @@ in {
         # (instead of the npm name) keeps opencode from fetching it from npm
         # at startup. Its only `@opencode-ai/plugin` import is type-only, so
         # the built dist/ needs nothing else to resolve.
-        settings.plugin = [
-          "file://${pkgs.unstable.opencode-claude-auth}/lib/node_modules/opencode-claude-auth/dist/index.js"
-        ];
+        #
+        # Disabled for now: the plugin doesn't work with opencode v2.
+        # settings.plugin = [
+        #   "file://${pkgs.unstable.opencode-claude-auth}/lib/node_modules/opencode-claude-auth/dist/index.js"
+        # ];
       };
     };
   };
