@@ -38,6 +38,11 @@ in {
         # settings.plugin = [
         #   "file://${pkgs.unstable.opencode-claude-auth}/lib/node_modules/opencode-claude-auth/dist/index.js"
         # ];
+        #
+        # Workaround until nixpkgs' opencode-claude-auth supports v2: the
+        # separate v2 fork, fetched from npm by opencode at startup. Swap back
+        # to the file:// entry above (and drop this) once nixpkgs catches up.
+        settings.plugin = ["opencode-claude-auth-v2@latest"];
       };
     };
   };
