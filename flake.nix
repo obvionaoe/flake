@@ -137,9 +137,20 @@
     packages = nixpkgs.lib.genAttrs darwinSystems (
       system: let
         # standalone `nix build .#<name>` needs the same allowUnfree policy
-        # modules/shared/core applies inside the module system — plain
-        # nixpkgs.legacyPackages doesn't have it.
-        pkgs = import nixpkgs {inherit system; config.allowUnfree = true;};
+        # and `pkgs.unstable` overlay modules/shared/core applies inside the
+        # module system — plain nixpkgs.legacyPackages has neither.
+        pkgs = import nixpkgs {
+          inherit system;
+          config.allowUnfree = true;
+          overlays = [
+            (_final: prev: {
+              unstable = import inputs.nixpkgs-unstable {
+                inherit system;
+                inherit (prev) config;
+              };
+            })
+          ];
+        };
       in
         autoPkgs ./pkgs pkgs
     );

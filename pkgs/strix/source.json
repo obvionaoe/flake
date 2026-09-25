@@ -1,5 +1,5 @@
 {
   "version": "1.6.2",
-  "url": "https://github.com/usestrix/strix/releases/download/v1.6.2/strix-1.6.2-macos-arm64.tar.gz",
-  "hash": "sha256-KFBKBaErU00L5bmFltuf1H0nI1SipB7J4wf+qgSfM+Y="
+  "url": "https://files.pythonhosted.org/packages/5d/51/4c1235903e38ff8b72d6af696a87e2dca6698e890b37cf67cf6e5a972740/strix_agent-1.6.2-py3-none-macosx_11_0_arm64.whl",
+  "hash": "sha256-e4I426Gy2Z69EJXDTAI6ZOoH0yUplDEtxq95jY6WLks="
 }
