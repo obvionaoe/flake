@@ -139,7 +139,14 @@ in {
           ]))
           (lib.mkOrder 550 "source ${zshPluginInit}")
           (lib.mkOrder 1000 (builtins.concatStringsSep "\n" [
-            "bindkey '5~' kill-word"
+            # Delete / Ctrl+Delete / Alt+Delete. Unbound, zsh swallows the
+            # `^[[3` of the sequence and inserts the trailing `~` instead of
+            # deleting. Alt is `;3` in the xterm modifier encoding; `^[^[[3~`
+            # covers terminals that send Alt as an ESC prefix instead.
+            "bindkey '^[[3~' delete-char"
+            "bindkey '^[[3;5~' kill-word"
+            "bindkey '^[[3;3~' kill-word"
+            "bindkey '^[^[[3~' kill-word"
             "bindkey '^H' backward-kill-word"
             "bindkey '^[[1;5C' forward-word"
             "bindkey '^[[1;5D' backward-word"
