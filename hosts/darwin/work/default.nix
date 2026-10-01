@@ -54,6 +54,7 @@
     btop.enable = true;
     atuin.enable = true;
     gh.enable = true;
+    asana-cli.enable = true;
     forgit.enable = true;
     cli-misc.enable = true;
     pkgs-update.enable = true;
