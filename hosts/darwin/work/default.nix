@@ -42,6 +42,7 @@
     secretspec.enable = true;
     doppler.enable = true; # temporary, remove when done trying it out
     spotify.enable = true;
+    discord.enable = true;
     ungoogled-chromium.enable = true;
     openlogi.enable = true;
     nix-gc.enable = true;
