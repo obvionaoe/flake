@@ -1,4 +1,4 @@
-{...}: {
+{user, ...}: {
   nixpkgs.hostPlatform = "aarch64-darwin";
   system.primaryUser = "user";
 
@@ -102,6 +102,8 @@
     Slack = 803453959;
     Twingate = 1501592214;
   };
+
+  home-manager.users.${user}.home.sessionVariables.ODK_ALLOW_GH_TOKEN_FALLBACK = "true";
 
   system.stateVersion = 7;
 }
