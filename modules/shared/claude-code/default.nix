@@ -139,6 +139,7 @@ in {
         # it's also declared here, or the next rebuild silently disables it.
         plugins.enabled = {
           "mattpocock-skills@claude-plugins-official" = true;
+          "cc-plugin-you-should-know@builtin" = true;
         };
 
         # Connect every session to Remote Control (mobile/companion) at
