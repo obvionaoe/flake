@@ -46,8 +46,12 @@ in {
       # deferred. The `$options[zle] = on` guard home-manager wraps this in
       # becomes redundant under zsh-defer: it only ever runs a command when
       # zle is idle, which by definition means zle is on.
+      #
+      # Ordered just after the other deferred inits (mkOrder 600): fzf's
+      # `--zsh` binds ^R to its own history widget, so atuin has to be sourced
+      # last among them or fzf silently wins and ^R never opens atuin.
       programs.zsh.initContent = lib.mkIf config.modules.zsh.enable (
-        lib.mkOrder 600 ''zsh-defer -c 'eval "$(${lib.getExe atuinPackage} init zsh)"' ''
+        lib.mkOrder 601 ''zsh-defer -c 'eval "$(${lib.getExe atuinPackage} init zsh)"' ''
       );
     };
   };
