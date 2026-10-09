@@ -52,6 +52,22 @@
         "type": "github"
       }
     },
+    "artginzburg-tap": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1791395812,
+        "narHash": "sha256-mO6HFWHb/kJwgQarrhHAMIOd9vMK3XpwLDfHMsi4ZYI=",
+        "owner": "artginzburg",
+        "repo": "homebrew-tap",
+        "rev": "13050cc44b033dcf0c2dec612998362a1c7cd0c0",
+        "type": "github"
+      },
+      "original": {
+        "owner": "artginzburg",
+        "repo": "homebrew-tap",
+        "type": "github"
+      }
+    },
     "axton-obsidian-visual-skills": {
       "flake": false,
       "locked": {
@@ -769,6 +785,7 @@
     "root": {
       "inputs": {
         "aps": "aps",
+        "artginzburg-tap": "artginzburg-tap",
         "claude-code": "claude-code",
         "home-manager": "home-manager",
         "homebrew-cask": "homebrew-cask",

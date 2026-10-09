@@ -32,6 +32,7 @@
     neovim.enable = true;
     touchIdSudo.enable = true;
     skhd.enable = true;
+    wheelclick.enable = true;
     agents.enable = true;
     decant.enable = true;
     aps.enable = true;

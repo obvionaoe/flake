@@ -56,6 +56,11 @@
       flake = false;
     };
 
+    artginzburg-tap = {
+      url = "github:artginzburg/homebrew-tap";
+      flake = false;
+    };
+
     zsh-min-plus = {
       url = "github:obvionaoe/zsh-min-plus";
       flake = false;
