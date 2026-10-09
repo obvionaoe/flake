@@ -364,9 +364,7 @@ in {
       # $HOME/.local/state/openlogi/openlogi-agent, not the /nix/store path,
       # since it's a genuinely new signing identity as far as TCC is
       # concerned. Neither should be needed again after that, regardless of
-      # how many times the underlying binary gets rebuilt. Same
-      # activation-copy pattern as modules/shared/rtk's
-      # `home.activation.rtkInit`.
+      # how many times the underlying binary gets rebuilt.
       home.activation.openlogiAgentStableCopy = home-manager.lib.hm.dag.entryAfter ["writeBoundary"] ''
         mkdir -p "$HOME/.local/state/openlogi"
         $DRY_RUN_CMD cp -f "${openlogi}/bin/openlogi-agent" "$HOME/.local/state/openlogi/openlogi-agent"
@@ -394,7 +392,7 @@ in {
 
       # Seeds ~/.config/openlogi/config.toml from cfg.settings/cfg.devices
       # above on *every* activation (not seed-once like modules/shared/gh's
-      # ghConfigSeed/rtk's rtkInit) — the flake is meant to be the source of
+      # ghConfigSeed) — the flake is meant to be the source of
       # truth here, so any tweak made through the OpenLogi GUI is reverted on
       # the next `darwin-rebuild switch`, in exchange for a new host coming
       # up with the mouse already configured the moment this module is

@@ -42,8 +42,6 @@ in {
       sudo darwin-rebuild switch --flake "$HOME/.flake#${config.networking.hostName}"
     '';
   in {
-    modules.rtk.enable = lib.mkDefault true;
-
     # claude-code-nix (the `claude-code` flake input) checks npm hourly
     # and bumps its package within ~30-60 minutes of a new release —
     # nixpkgs' own claude-code package can lag days to weeks behind

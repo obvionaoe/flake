@@ -68,7 +68,7 @@ in {
       # upstream, fully merged into Trivy, same check IDs unchanged. It's
       # its own module (modules/shared/trivy) since its scope is broader
       # than IaC; default-enabled here so this tier still works out of the
-      # box, same pattern as modules.claude-code -> modules.rtk. Note for any
+      # box, same pattern as modules.headroom-proxy -> modules.claude-code. Note for any
       # future inline suppressions in .tf source: use `#trivy:ignore:...` or
       # a `.trivyignore` file, not the old `#tfsec:ignore:...` syntax, which
       # isn't reliably honored across trivy versions.

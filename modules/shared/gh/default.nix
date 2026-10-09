@@ -37,8 +37,7 @@ in {
       # (cli/cli#4955, cli/cli#8357, cli/cli#8496), not something specific
       # to this machine. Point gh at a mutable dir instead, seeded once
       # from `settings` above; after that gh owns the file and nix never
-      # touches it again. Same "declarative seed, then mutable" pattern as
-      # modules/shared/rtk's `home.activation.rtkInit`.
+      # touches it again.
       #
       # Deliberately not using GH_TOKEN as a workaround: a long-lived PAT
       # sitting in an env var/dotfile is a worse security posture than

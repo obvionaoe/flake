@@ -71,7 +71,7 @@ in {
     modules.containers.enable = lib.mkDefault true;
     # So there's something to point at the proxy below without a second,
     # separate opt-in — same cross-module-default pattern as
-    # modules/shared/claude-code's own `modules.rtk.enable`.
+    # modules/shared/terraform's `modules.trivy.enable`.
     modules.claude-code.enable = lib.mkDefault true;
 
     home-manager.users.${user} = {

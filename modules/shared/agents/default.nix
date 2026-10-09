@@ -10,8 +10,8 @@ in {
   # actual package/config wiring (nix-claude-code home-manager surface,
   # opencode's programs.opencode, any future harness's equivalent) and stay
   # off unless something turns them on; this module is the "something",
-  # same cross-module-default idiom modules/shared/claude-code already uses
-  # for modules.rtk (see modules/CLAUDE.md, "Cross-module defaults"), just
+  # same cross-module-default idiom modules/shared/headroom-proxy already
+  # uses for modules.claude-code (see modules/CLAUDE.md, "Cross-module defaults"), just
   # one level up. Keeping this file free of any harness-specific config is
   # deliberate: it's what keeps it from bloating as more harnesses get added
   # here later — each new one gets its own module plus one more line below,

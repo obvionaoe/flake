@@ -55,7 +55,7 @@ a tool needs both.
 ## Cross-module defaults
 
 A module can default-enable another from inside its own `config` block,
-e.g. `modules/shared/claude-code` sets `modules.rtk.enable =
+e.g. `modules/shared/terraform` sets `modules.trivy.enable =
 lib.mkDefault true;`. Use `lib.mkDefault` (not a plain assignment) so a
 host can still override it explicitly.
 
