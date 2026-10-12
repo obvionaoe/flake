@@ -33,6 +33,7 @@
     touchIdSudo.enable = true;
     skhd.enable = true;
     wheelclick.enable = true;
+    twingate.keepAlive = true;
     agents.enable = true;
     decant.enable = true;
     aps.enable = true;
