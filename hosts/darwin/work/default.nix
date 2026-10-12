@@ -88,6 +88,7 @@
     firefox.enable = true;
     obsidian.enable = true;
     soloterm.enable = true;
+    scratchpad.enable = true;
     datagrip.enable = true;
     headroom-proxy.enable = false;
   };

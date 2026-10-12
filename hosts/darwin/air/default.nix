@@ -84,6 +84,7 @@
     obsidian.enable = true;
     microsoft-teams.enable = true;
     soloterm.enable = true;
+    scratchpad.enable = true;
     headroom-proxy.enable = true;
   };
 
