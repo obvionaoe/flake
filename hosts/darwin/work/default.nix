@@ -34,6 +34,7 @@
     skhd.enable = true;
     wheelclick.enable = true;
     twingate.keepAlive = true;
+    keeper.keepAlive = true;
     agents.enable = true;
     decant.enable = true;
     aps.enable = true;
@@ -76,6 +77,7 @@
     cloud.enable = true;
     containers = {
       enable = true;
+      keepAlive = true;
       scanning.enable = true;
     };
     go.enable = true;
@@ -90,6 +92,7 @@
     obsidian.enable = true;
     soloterm.enable = true;
     scratchpad.enable = true;
+    linear.enable = true;
     datagrip.enable = true;
     headroom-proxy.enable = false;
   };

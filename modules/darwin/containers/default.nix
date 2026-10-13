@@ -6,9 +6,10 @@
 }: let
   cfg = config.modules.containers;
 in {
-  # No `options` block here — modules/shared/containers already declares
-  # modules.containers.enable; this module just reads it and adds the
-  # Darwin-only daemon half. See modules/CLAUDE.md's coupled-module split.
+  # modules/shared/containers declares modules.containers.enable; this module
+  # reads it and adds the Darwin-only daemon half (see modules/CLAUDE.md's
+  # coupled-module split), plus the Darwin-only keepAlive option below.
+  options.modules.containers.keepAlive = lib.mkEnableOption "relaunching Docker Desktop whenever it quits";
 
   config = lib.mkIf cfg.enable {
     # Provides both the docker daemon (via Docker Desktop's own VM) and its
@@ -41,6 +42,22 @@ in {
       # symlinks in /usr/local/bin" was ever enabled in Docker Desktop's
       # Advanced settings — either way `docker` still resolves.
       home.sessionPath = ["${config.home-manager.users.${user}.home.homeDirectory}/.docker/bin"];
+
+      # Quitting Docker Desktop (or it crashing) takes the daemon down with it,
+      # so relaunch it — same polling approach as modules/darwin/twingate.
+      launchd.agents.docker-desktop-keepalive = lib.mkIf cfg.keepAlive {
+        enable = true;
+        config = {
+          ProgramArguments = [
+            "/bin/sh"
+            "-c"
+            "/usr/bin/pgrep -x 'Docker Desktop' >/dev/null || /usr/bin/open -g -a Docker"
+          ];
+          StartInterval = 15;
+          RunAtLoad = true;
+          LimitLoadToSessionType = "Aqua";
+        };
+      };
     };
 
     # Docker Desktop's own "Start Docker Desktop when you log in" preference

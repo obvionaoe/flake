@@ -71,6 +71,7 @@
     cloud.enable = true;
     containers = {
       enable = true;
+      keepAlive = true;
       scanning.enable = true;
     };
     go.enable = true;
@@ -85,6 +86,7 @@
     microsoft-teams.enable = true;
     soloterm.enable = true;
     scratchpad.enable = true;
+    linear.enable = true;
     headroom-proxy.enable = true;
   };
 
