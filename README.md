@@ -18,7 +18,12 @@ nix run --extra-experimental-features "nix-command flakes" github:obvionaoe/flak
 ```
 
 Installs Xcode Command Line Tools if missing, clones this repo to
-`~/.flake`, and runs the first `darwin-rebuild switch`. `<hostname>` must match
+`~/.flake`, runs the first `darwin-rebuild switch`, and then — if the host
+enables `modules.gh` and isn't logged in yet — starts `gh auth login` (browser
+flow; the credential stays in gh's own store, never in the repo). It ends by
+printing what's still manual for that host: missing SSH/GPG keys, macOS
+permission grants, and app sign-ins.
+`<hostname>` must match
 one of the directories under `hosts/darwin/` (currently `air` or `work`), and
 must be run while logged into the macOS account that host declares as
 `system.primaryUser` (`obvionaoe` for `air`, `user` for `work`) — the bootstrap

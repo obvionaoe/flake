@@ -108,7 +108,8 @@
     # `nix run github:obvionaoe/flake -- <hostname>` on a fresh Mac with only
     # Nix installed: installs Xcode CLT if missing, backs up any
     # pre-existing /etc files that would conflict with nix-darwin, clones this
-    # repo to ~/.flake, and runs the first `darwin-rebuild switch`. See
+    # repo to ~/.flake, runs the first `darwin-rebuild switch`, and then
+    # offers `gh auth login` if modules.gh is enabled. See
     # scripts/bootstrap.sh for the actual logic; this just wires up the
     # locked darwin-rebuild binary and repo URL per-system.
     bootstrapApp = system: let

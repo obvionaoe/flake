@@ -127,5 +127,99 @@ echo "==> Running first darwin-rebuild switch for host '$hostname' (requires sud
   --flake "$flake_dir#$hostname" \
   --option experimental-features "nix-command flakes"
 
+# gh is installed by the switch above (modules.gh), so its login can only
+# happen afterwards. The credential goes into gh's own store (keyring), never
+# the repo, and the zsh/session wiring in modules/shared/gh picks it up as
+# GH_TOKEN/GITHUB_TOKEN in any terminal window opened after this. Token vars
+# are stripped from the calls since gh would otherwise report them as the login.
+gh_enabled="$(nix eval --raw \
+  --option experimental-features "nix-command flakes" \
+  --apply 'v: if v then "yes" else "no"' \
+  "$flake_dir#darwinConfigurations.$hostname.config.modules.gh.enable" 2>/dev/null || true)"
+if [[ "$gh_enabled" == "yes" ]]; then
+  echo "==> Checking GitHub CLI login..."
+  gh_bin="/etc/profiles/per-user/$current_user/bin/gh"
+  gh_state="$(nix eval --raw \
+    --option experimental-features "nix-command flakes" \
+    "$flake_dir#darwinConfigurations.$hostname.config.home-manager.users.$current_user.xdg.stateHome" 2>/dev/null || true)/gh"
+  if [[ ! -x "$gh_bin" ]]; then
+    echo "warning: $gh_bin not found — skipping. Run 'gh auth login' yourself once it's on PATH." >&2
+  elif env -u GH_TOKEN -u GITHUB_TOKEN GH_CONFIG_DIR="$gh_state" "$gh_bin" auth status >/dev/null 2>&1; then
+    echo "Already logged in to GitHub — leaving it alone."
+  else
+    echo "Not logged in to GitHub — starting 'gh auth login' (browser flow; SSH keys are handled separately)."
+    # `|| echo`: a failed or skipped login (including a non-interactive run) shouldn't
+    # abort the bootstrap, which has already done the important part.
+    env -u GH_TOKEN -u GITHUB_TOKEN GH_CONFIG_DIR="$gh_state" "$gh_bin" auth login \
+      --hostname github.com --git-protocol ssh --web --skip-ssh-key \
+      || echo "warning: gh login didn't complete — run 'gh auth login' yourself later." >&2
+  fi
+fi
+
+# Things only a person can finish: nothing in the flake creates SSH or GPG
+# keys, grants macOS permissions, or signs into apps. Check what can be checked
+# and print the rest as a checklist, limited to what this host actually enables.
+host_cfg="$flake_dir#darwinConfigurations.$hostname.config"
+# flag <attr under config> [nix function turning the value into a bool]
+flag() {
+  [[ "$(nix eval --raw \
+    --option experimental-features "nix-command flakes" \
+    --apply "v: if (${2:-v}) then \"yes\" else \"no\"" \
+    "$host_cfg.$1" 2>/dev/null || true)" == "yes" ]]
+}
+# str <attr under config>: the value, or "" if null/unset.
+str() {
+  nix eval --raw \
+    --option experimental-features "nix-command flakes" \
+    --apply 'v: if v == null then "" else v' \
+    "$host_cfg.$1" 2>/dev/null || true
+}
+
+todo=()
+
+if flag modules.ssh.enable; then
+  ssh_keys=()
+  default_key="$(str modules.ssh.defaultIdentityFile)"
+  [[ -n "$default_key" ]] && ssh_keys+=("$default_key")
+  # Hardcoded in modules/shared/ssh's github-personal alias.
+  if flag modules.ssh.githubPersonal.enable; then ssh_keys+=("~/.ssh/personal"); fi
+  for key in "${ssh_keys[@]}"; do
+    if [[ ! -e "${key/#\~/$HOME}" ]]; then
+      todo+=("SSH key $key is missing: create or restore it, register it on GitHub, then 'ssh-add --apple-use-keychain $key' (git over SSH fails without it).")
+    fi
+  done
+fi
+
+if flag modules.gnupg.enable; then
+  gpg_bin="/etc/profiles/per-user/$current_user/bin/gpg"
+  if ! "$gpg_bin" --list-secret-keys --with-colons 2>/dev/null | /usr/bin/grep -q '^sec'; then
+    todo+=("No GPG secret key found: import or generate one, otherwise git commits stay unsigned (silently).")
+  fi
+fi
+
+if flag modules.containers.enable; then
+  todo+=("Docker Desktop: launch it once, accept the license, and check Settings > General > 'Start Docker Desktop when you log in'.")
+fi
+for m in openlogi skhd wheelclick; do
+  if flag "modules.$m.enable"; then
+    todo+=("$m: grant it Accessibility (and Input Monitoring where asked) in System Settings > Privacy & Security.")
+  fi
+done
+if flag homebrew.masApps 'v != {}'; then
+  todo+=("Mac App Store apps are declared for this host: sign into the App Store (or finish MDM enrollment) so they provision.")
+fi
+if flag modules.bitwarden.enable; then todo+=("Bitwarden: sign in."); fi
+if flag modules.claude-code.enable; then todo+=("Claude Code: run 'claude' and sign in."); fi
+if flag modules.cloud.enable; then
+  todo+=("Cloud CLIs: 'aws configure sso' and 'gcloud auth login' as needed.")
+fi
+
+if ((${#todo[@]} > 0)); then
+  echo "==> Still to do by hand:"
+  for item in "${todo[@]}"; do
+    echo "  - $item"
+  done
+fi
+
 echo "==> Done. $flake_dir is now the source of truth for this machine."
 echo "    Future rebuilds: darwin-rebuild switch --flake $flake_dir#$hostname"
