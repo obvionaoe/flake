@@ -24,15 +24,6 @@ if ! /usr/bin/xcode-select -p >/dev/null 2>&1; then
 fi
 echo "Xcode Command Line Tools OK."
 
-if [[ "$(/usr/bin/uname -m)" == "arm64" ]]; then
-  echo "==> Checking Rosetta 2..."
-  if ! /usr/bin/arch -arch x86_64 /usr/bin/true >/dev/null 2>&1; then
-    echo "Rosetta 2 not found — installing (requires sudo)."
-    /usr/bin/sudo /usr/sbin/softwareupdate --install-rosetta --agree-to-license
-  fi
-  echo "Rosetta 2 OK."
-fi
-
 echo "==> Backing up any pre-existing /etc files that would conflict with nix-darwin..."
 etc_conflicts=(
   "/etc/nix/nix.conf"

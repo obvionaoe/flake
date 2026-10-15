@@ -106,7 +106,7 @@
     darwinSystems = ["aarch64-darwin" "x86_64-darwin"];
 
     # `nix run github:obvionaoe/flake -- <hostname>` on a fresh Mac with only
-    # Nix installed: installs Xcode CLT + Rosetta if missing, backs up any
+    # Nix installed: installs Xcode CLT if missing, backs up any
     # pre-existing /etc files that would conflict with nix-darwin, clones this
     # repo to ~/.flake, and runs the first `darwin-rebuild switch`. See
     # scripts/bootstrap.sh for the actual logic; this just wires up the
