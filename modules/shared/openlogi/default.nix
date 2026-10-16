@@ -39,8 +39,15 @@
       old.cargoBuildFlags
       ++ lib.optionals pkgs.stdenv.hostPlatform.isDarwin ["--package=openlogi-agent"];
 
+    # cargo-bundle 0.12.0 with no --format builds every format for the host,
+    # which on macOS now includes a .dmg via `hdiutil` — absent from the Nix
+    # sandbox ("Failed to spawn process: hdiutil") — and prints several paths
+    # where upstream's `app_path=$(cargo bundle --release | xargs)` expects
+    # one. Restrict it to the .app. `replaceStrings` is a silent no-op on a
+    # miss, hence the assert, so an upstream wording change fails loudly.
     installPhase =
-      old.installPhase
+      assert lib.hasInfix "cargo bundle --release" old.installPhase;
+      builtins.replaceStrings ["cargo bundle --release"] ["cargo bundle --release --format osx"] old.installPhase
       + lib.optionalString pkgs.stdenv.hostPlatform.isDarwin ''
         install -Dm755 "$release_target/openlogi-agent" "$out/bin/openlogi-agent"
       '';
@@ -76,6 +83,27 @@
     # Drop each half once a fix lands upstream and this version bumps past
     # whichever release picks it up.
     patches = (old.patches or []) ++ [./mx-master-4-gesture-fixes.patch];
+
+    # cargo-bundle 0.12.0 (what nixpkgs-unstable now ships) moved the macOS
+    # bundle keys out of flat `osx_*` fields into a nested
+    # `[package.metadata.bundle.osx]` table (`minimum_system_version`,
+    # `url_schemes`), and rejects the old names with "unknown field
+    # `osx_minimum_system_version`" at installPhase. OpenLogi 0.6.25 still
+    # uses the flat form, so rewrite it into the nested one. Drop this once
+    # a release that targets the new cargo-bundle schema lands in nixpkgs.
+    postPatch =
+      (old.postPatch or "")
+      + lib.optionalString pkgs.stdenv.hostPlatform.isDarwin ''
+        substituteInPlace crates/openlogi-gui/Cargo.toml \
+          --replace-fail 'osx_minimum_system_version = "13.0"' "" \
+          --replace-fail 'osx_url_schemes = ["openlogi"]' ""
+        cat >> crates/openlogi-gui/Cargo.toml <<'EOF'
+
+        [package.metadata.bundle.osx]
+        minimum_system_version = "13.0"
+        url_schemes = ["openlogi"]
+        EOF
+      '';
   });
 
   # For generating config.toml declaratively (see cfg.settings/cfg.devices
