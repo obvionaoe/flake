@@ -21,24 +21,11 @@
   # is deleted immediately after import within the same activation run.
   openlogiCodesignP12Pass = "openlogi-local-codesign";
 
-  # Upstream nixpkgs never builds openlogi-agent on Darwin — cargoBuildFlags
-  # only adds `--package=openlogi-agent` when stdenv.hostPlatform.isLinux,
-  # even though the crate itself is cross-platform (its Cargo.toml pulls in
-  # objc2/AppKit bindings for a macOS tray icon) and the same
-  # Cargo.lock/vendor directory already covers its dependencies — this
-  # looks like a plain packaging gap, not a real platform limitation.
-  # Without the agent, the GUI starts but warns "agent not reachable and
-  # its binary wasn't found next to the GUI" and nothing actually remaps
-  # buttons. This override adds the extra --package flag and installs the
-  # resulting binary next to `openlogi`, same as upstream's own Linux
-  # installPhase branch — a minimal diff kept as an append rather than a
-  # full installPhase rewrite, so it survives nixpkgs updates to the rest
-  # of that phase.
+  # Local tweaks on top of nixpkgs-unstable's openlogi: the cargo-bundle 0.12
+  # fixes (installPhase here, postPatch below) and the MX Master 4 gesture
+  # patch. nixpkgs itself already builds and installs openlogi-agent on
+  # Darwin, so nothing extra is needed for that.
   openlogi = pkgs.unstable.openlogi.overrideAttrs (old: {
-    cargoBuildFlags =
-      old.cargoBuildFlags
-      ++ lib.optionals pkgs.stdenv.hostPlatform.isDarwin ["--package=openlogi-agent"];
-
     # cargo-bundle 0.12.0 with no --format builds every format for the host,
     # which on macOS now includes a .dmg via `hdiutil` — absent from the Nix
     # sandbox ("Failed to spawn process: hdiutil") — and prints several paths
@@ -47,10 +34,7 @@
     # miss, hence the assert, so an upstream wording change fails loudly.
     installPhase =
       assert lib.hasInfix "cargo bundle --release" old.installPhase;
-      builtins.replaceStrings ["cargo bundle --release"] ["cargo bundle --release --format osx"] old.installPhase
-      + lib.optionalString pkgs.stdenv.hostPlatform.isDarwin ''
-        install -Dm755 "$release_target/openlogi-agent" "$out/bin/openlogi-agent"
-      '';
+      builtins.replaceStrings ["cargo bundle --release"] ["cargo bundle --release --format osx"] old.installPhase;
 
     # Two MX Master 4 gesture-reliability fixes for this exact pinned version
     # (0.6.25), both verified live on real hardware with locally instrumented
