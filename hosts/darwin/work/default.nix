@@ -59,6 +59,7 @@
     atuin.enable = true;
     gh.enable = true;
     asana-cli.enable = true;
+    auth0-cli.enable = true;
     forgit.enable = true;
     cli-misc.enable = true;
     pkgs-update.enable = true;
