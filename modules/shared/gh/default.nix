@@ -32,6 +32,7 @@ in {
           gh-dash
           gh-poi
           gh-notify
+          unstable.gh-stack
         ];
         inherit settings;
       };

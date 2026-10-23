@@ -16,6 +16,6 @@ in {
     # MySQL client tooling was dropped: nixpkgs removed real MySQL entirely
     # (mysql80 EOL'd 2026-04-30) and only offers mariadb.client as a
     # wire-compatible substitute, which isn't actually MySQL.
-    home-manager.users.${user}.home.packages = with pkgs; [postgresql dbmate];
+    home-manager.users.${user}.home.packages = with pkgs; [unstable.postgresql dbmate];
   };
 }

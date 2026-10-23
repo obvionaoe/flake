@@ -13,6 +13,7 @@ in {
     home-manager.users.${user} = {
       programs.fzf = {
         enable = true;
+        package = pkgs.unstable.fzf;
         tmux.enableShellIntegration = config.modules.tmux.enable;
         # Zsh integration is hand-rolled below, deferred via zsh-defer
         # (sourced by modules/shared/zsh) instead of home-manager's eager
@@ -28,7 +29,7 @@ in {
       # redundant under zsh-defer: it only ever runs a command when zle is
       # idle, which by definition means zle is on.
       programs.zsh.initContent = lib.mkIf config.modules.zsh.enable (
-        lib.mkOrder 600 ''zsh-defer -c 'source <(${lib.getExe pkgs.fzf} --zsh)' ''
+        lib.mkOrder 600 ''zsh-defer -c 'source <(${lib.getExe pkgs.unstable.fzf} --zsh)' ''
       );
     };
   };

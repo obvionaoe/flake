@@ -17,6 +17,6 @@ in {
   options.modules.trivy.enable = lib.mkEnableOption "trivy (security/misconfiguration scanner)";
 
   config = lib.mkIf cfg.enable {
-    home-manager.users.${user}.home.packages = [pkgs.trivy];
+    home-manager.users.${user}.home.packages = [pkgs.unstable.trivy];
   };
 }

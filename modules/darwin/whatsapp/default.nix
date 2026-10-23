@@ -8,6 +8,6 @@
   options.modules.whatsapp.enable = lib.mkEnableOption "WhatsApp desktop client";
 
   config = lib.mkIf config.modules.whatsapp.enable {
-    home-manager.users.${user}.home.packages = [pkgs.whatsapp-for-mac];
+    home-manager.users.${user}.home.packages = [pkgs.unstable.whatsapp-for-mac];
   };
 }

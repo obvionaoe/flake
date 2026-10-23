@@ -26,7 +26,7 @@ in {
         # nixpkgs' `docker` too would put two copies of the same binary on
         # PATH, fighting over the same DOCKER_CONFIG below. A future NixOS
         # host has no Docker Desktop, so it still needs this one.
-        home.packages = with pkgs; [crane skopeo kind] ++ lib.optional (!pkgs.stdenv.isDarwin) docker;
+        home.packages = with pkgs; [unstable.crane unstable.skopeo unstable.kind] ++ lib.optional (!pkgs.stdenv.isDarwin) docker;
 
         home.sessionVariables =
           {

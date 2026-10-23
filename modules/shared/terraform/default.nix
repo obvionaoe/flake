@@ -18,7 +18,7 @@ in {
         # tenv is a terraform/OpenTofu *version manager* (like tenv/asdf) —
         # it provides the `terraform`/`tofu` shims itself, so no separate
         # `pkgs.terraform`/`pkgs.opentofu` package is installed here.
-        home.packages = [pkgs.tenv];
+        home.packages = [pkgs.unstable.tenv];
 
         home.shellAliases = {
           tf = "terraform";
@@ -62,7 +62,7 @@ in {
     })
 
     (lib.mkIf (cfg.enable && cfg.linting.enable) {
-      home-manager.users.${user}.home.packages = with pkgs; [tflint terraform-docs];
+      home-manager.users.${user}.home.packages = with pkgs; [unstable.tflint unstable.terraform-docs];
 
       # trivy (via `trivy config .` in tfchk below) replaces tfsec — frozen
       # upstream, fully merged into Trivy, same check IDs unchanged. It's

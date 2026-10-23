@@ -181,9 +181,9 @@ in {
     (lib.mkIf cfg.enable {
       home-manager.users.${user} = {
         home.packages = with pkgs; [
-          kubecolor
-          kubectl
-          kubernetes-helm
+          unstable.kubecolor
+          unstable.kubectl
+          unstable.kubernetes-helm
           kubectx
           kubecm
           kubeprompt
@@ -202,7 +202,7 @@ in {
       modules.trivy.enable = lib.mkDefault true;
 
       home-manager.users.${user} = {
-        home.packages = with pkgs; [kubeconform kube-linter kube-score];
+        home.packages = with pkgs; [unstable.kubeconform kube-linter kube-score];
 
         home.shellAliases = {
           kconform = "kubeconform";
@@ -218,7 +218,7 @@ in {
         home.packages = with pkgs; [
           kube-capacity
           kubent
-          kubectl-klock
+          unstable.kubectl-klock
           kubectl-ktop
           unstable.operator-sdk
           unstable.pluto

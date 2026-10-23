@@ -51,7 +51,6 @@
     bat.enable = true;
     fzf.enable = true;
     btop.enable = true;
-    fastfetch.enable = true;
     atuin.enable = true;
     gh.enable = true;
     forgit.enable = true;

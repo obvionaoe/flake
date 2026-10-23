@@ -7,7 +7,7 @@
 }: let
   cfg = config.modules.go;
 in {
-  options.modules.go.enable = lib.mkEnableOption "go toolchain (gopls, gotests, air, cobra-cli, wgo)";
+  options.modules.go.enable = lib.mkEnableOption "go toolchain (gopls, gotests, cobra-cli)";
 
   config = lib.mkIf cfg.enable {
     home-manager.users.${user} = {
@@ -21,16 +21,13 @@ in {
       };
 
       home.packages = with pkgs; [
-        gopls
+        unstable.gopls
         gotests
-        air
         cobra-cli
-        wgo
       ];
 
       home.shellAliases = {
         gomktest = "gotests -all -w -parallel";
-        gowtest = ''_gowtest(){file=$(ls ./$1* | grep -Ev "^*_test.go$"); test=$(ls ./$1* | grep -E "^*_test.go$"); wgo go test $file $test}; _gowtest'';
       };
     };
   };

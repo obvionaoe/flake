@@ -13,6 +13,7 @@ in {
     home-manager.users.${user} = {
       programs.zoxide = {
         enable = true;
+        package = pkgs.unstable.zoxide;
         # Zsh integration is hand-rolled below, deferred via zsh-defer
         # (sourced by modules/shared/zsh) instead of home-manager's eager
         # `eval "$(zoxide init zsh)"` — that eval is a real subprocess spawn
@@ -25,7 +26,7 @@ in {
       # empty), just deferred. Integrate only with shells this repo actually
       # manages — mirror modules/darwin/homebrew's gating.
       programs.zsh.initContent = lib.mkIf config.modules.zsh.enable (
-        lib.mkOrder 600 ''zsh-defer -c 'eval "$(${lib.getExe pkgs.zoxide} init zsh)"' ''
+        lib.mkOrder 600 ''zsh-defer -c 'eval "$(${lib.getExe pkgs.unstable.zoxide} init zsh)"' ''
       );
     };
   };

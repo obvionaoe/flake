@@ -133,6 +133,7 @@ in {
 
       programs.git = {
         enable = true;
+        package = pkgs.unstable.git;
 
         # `settings` replaced both `extraConfig` and the plain `userName`/
         # `userEmail` options in recent home-manager — this is the full git
@@ -213,6 +214,7 @@ in {
       # top-level `programs.delta` module in recent home-manager.
       programs.delta = {
         enable = true;
+        package = pkgs.unstable.delta;
         enableGitIntegration = true;
 
         options = {

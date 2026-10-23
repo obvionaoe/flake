@@ -17,6 +17,7 @@ in {
     home-manager.users.${user} = {
       programs.neovim = {
         enable = true;
+        package = pkgs.unstable.neovim-unwrapped;
         defaultEditor = true;
         viAlias = true;
         vimAlias = true;
@@ -24,7 +25,7 @@ in {
         # Plugins are installed and pinned here; the Lua below just calls
         # each one's setup() — no plugin manager (lazy.nvim etc.) needed,
         # Nix already puts every plugin on the runtimepath.
-        plugins = with pkgs.vimPlugins; [
+        plugins = with pkgs.unstable.vimPlugins; [
           (nvim-treesitter.withPlugins (p: [
             p.nix
             p.lua
@@ -56,7 +57,7 @@ in {
 
         # LSP servers only — general-purpose CLI tools (rg/fd) live in
         # modules/shared/search instead, so they're on the whole PATH.
-        extraPackages = with pkgs; [
+        extraPackages = with pkgs.unstable; [
           nixd
           gopls
           lua-language-server

@@ -1,6 +1,7 @@
 {
   config,
   lib,
+  pkgs,
   user,
   ...
 }: let
@@ -11,6 +12,7 @@ in {
   config = lib.mkIf cfg.enable {
     home-manager.users.${user}.programs.eza = {
       enable = true;
+      package = pkgs.unstable.eza;
 
       enableZshIntegration = config.modules.zsh.enable;
 

@@ -12,6 +12,7 @@ in {
   config = lib.mkIf cfg.enable {
     home-manager.users.${user}.programs.tmux = {
       enable = true;
+      package = pkgs.unstable.tmux;
 
       # C-Space instead of the default C-b: easier one-handed reach, and
       # doesn't collide with readline's C-b (back-char).

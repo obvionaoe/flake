@@ -14,7 +14,7 @@ in {
 
   config = lib.mkIf cfg.enable {
     home-manager.users.${user} = {
-      home.packages = with pkgs; [jq unstable.dasel ijq prom2json];
+      home.packages = with pkgs; [jq unstable.dasel unstable.ijq prom2json];
 
       home.shellAliases = {
         cq = "dasel -r csv";

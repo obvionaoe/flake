@@ -13,6 +13,6 @@ in {
     # System-wide, not aliased over grep/find: ripgrep/fd have slightly
     # different flags than POSIX grep/find, so they're added as their own
     # `rg`/`fd` commands rather than shadowing the originals.
-    home-manager.users.${user}.home.packages = with pkgs; [ripgrep fd];
+    home-manager.users.${user}.home.packages = with pkgs; [unstable.ripgrep unstable.fd];
   };
 }

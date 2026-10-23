@@ -14,7 +14,7 @@ in {
   config = lib.mkIf cfg.enable {
     home-manager.users.${user} = {
       home.packages = with pkgs; [
-        awscli2
+        unstable.awscli2
         (google-cloud-sdk.withExtraComponents (with google-cloud-sdk.components; [
           gke-gcloud-auth-plugin
         ]))

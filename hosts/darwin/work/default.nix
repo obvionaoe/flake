@@ -43,7 +43,6 @@
     bitwarden.enable = true;
     gnupg.enable = true;
     secretspec.enable = true;
-    doppler.enable = true; # temporary, remove when done trying it out
     spotify.enable = true;
     discord.enable = true;
     ungoogled-chromium.enable = true;

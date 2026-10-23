@@ -16,7 +16,7 @@ in {
           pip
           python-nmap
         ]))
-      virtualenv
+      unstable.virtualenv
     ];
   };
 }
