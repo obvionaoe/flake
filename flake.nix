@@ -126,6 +126,7 @@
     in {
       type = "app";
       program = "${drv}/bin/flake-bootstrap";
+      meta.description = "Bootstrap a fresh machine from this flake";
     };
   in {
     formatter =
