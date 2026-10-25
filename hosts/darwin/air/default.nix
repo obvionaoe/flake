@@ -86,7 +86,7 @@
     soloterm.enable = true;
     scratchpad.enable = true;
     linear.enable = true;
-    headroom-proxy.enable = true;
+    headroom-proxy.enable = false;
   };
 
   # Air-only: don't mention Claude in commits (no "Co-Authored-By: Claude"
