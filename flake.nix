@@ -164,10 +164,6 @@
 
     apps = nixpkgs.lib.genAttrs darwinSystems (system: {
       default = bootstrapApp system;
-      pkgs-update = {
-        type = "app";
-        program = "${self.packages.${system}.pkgs-update}/bin/pkgs-update";
-      };
     });
 
     # NixOS has no `system.primaryUser` to hang `_module.args.user` off of like
