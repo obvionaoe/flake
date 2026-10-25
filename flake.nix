@@ -164,7 +164,6 @@
 
     apps = nixpkgs.lib.genAttrs darwinSystems (system: {
       default = bootstrapApp system;
-      bootstrap = bootstrapApp system;
       pkgs-update = {
         type = "app";
         program = "${self.packages.${system}.pkgs-update}/bin/pkgs-update";
