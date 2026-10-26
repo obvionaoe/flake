@@ -45,9 +45,10 @@ Never commit, even temporarily:
   `obvionaoe@protonmail.com`. No other name or address belongs here,
   including any employer identity — the `work` host's git identity therefore
   goes through `modules.git.identityFile` instead (see below). Commits to
-  `~/.flake` are pinned to the public identity on *every* host by an
-  `includeIf "gitdir:~/.flake/"` in `modules/shared/git`, so a work machine
-  can't accidentally author a commit here under its own identity.
+  `~/.flake` and anything under `~/personal` (any depth) are pinned to the
+  public identity on *every* host by `includeIf "gitdir:~/.flake/"` and
+  `"gitdir:~/personal/"` in `modules/shared/git`, so a work machine can't
+  accidentally author a commit there under its own identity.
 - Internal/employer hostnames, domains, or service URLs (e.g. anything like
   `*.internal`, a company's VPN/monitoring/git-mirror hosts).
 - IP addresses (homelab, cloud instances, VPNs) or SSH host maps that reveal

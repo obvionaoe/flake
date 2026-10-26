@@ -16,7 +16,7 @@
   # blocking the commit.
   #
   # `flake.nosign` is an escape hatch for repos that must never be
-  # auto-signed regardless of key availability (see `flakeIdentity` below) —
+  # auto-signed regardless of key availability (see `publicIdentity` below) —
   # the hook writes straight to local repo config, which always outranks an
   # `includeIf`, so without this check it would silently re-enable signing
   # the moment a key exists.
@@ -45,10 +45,12 @@
     # git ignores it when the file doesn't exist.
     // lib.optionalAttrs (cfg.identityFile != null) {include.path = cfg.identityFile;};
 
-  # Not per-host: commits to *this* repo are always authored by the public
-  # identity, on every host. `work`'s default identity deliberately isn't in the
-  # repo, but its commits here still have to be — so this overrides whatever the
-  # host's default identity is, for repos under `~/.flake` only. Signing is
+  # Not per-host: commits to *this* repo, and to anything under `~/personal`
+  # (at any depth — a `gitdir:` condition ending in `/` matches recursively),
+  # are always authored by the public identity, on every host. `work`'s default
+  # identity deliberately isn't in the repo, but its commits to these paths
+  # still have to be public — so this overrides whatever the host's default
+  # identity is, for repos under those directories only. Signing is
   # disabled here too — `flake.nosign` is checked by `gpgSignFallbackHook`
   # above so a locally-available key doesn't get re-enabled on the next commit.
   #
@@ -56,8 +58,8 @@
   # everything in `settings`, and git config is last-wins — so this beats both
   # the inline `[user]` and `identityFile`. Using `contents` rather than `path`
   # means home-manager generates the included file itself, in the store.
-  flakeIdentity = {
-    condition = "gitdir:~/.flake/";
+  publicIdentity = condition: {
+    inherit condition;
     contents = {
       user = {
         name = "obvionaoe";
@@ -172,7 +174,10 @@ in {
           }
           // identity;
 
-        includes = [flakeIdentity];
+        includes = map publicIdentity [
+          "gitdir:~/.flake/"
+          "gitdir:~/personal/"
+        ];
 
         hooks.pre-commit = gpgSignFallbackHook;
 
