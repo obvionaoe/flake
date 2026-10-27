@@ -43,6 +43,16 @@ in {
       # Advanced settings — either way `docker` still resolves.
       home.sessionPath = ["${config.home-manager.users.${user}.home.homeDirectory}/.docker/bin"];
 
+      # Docker Desktop drops its zsh completions into ~/.docker/completions and
+      # expects that directory on fpath — it normally appends the fpath line to
+      # ~/.zshrc itself, which, like the PATH edit above, home-manager would
+      # discard on the next switch (and Settings then warns "Unable to find
+      # Docker zsh completion in your FPATH"). Order 540 puts it before the
+      # compinit in modules/shared/zsh's plugin init (order 550).
+      programs.zsh.initContent = lib.mkOrder 540 ''
+        fpath=(${config.home-manager.users.${user}.home.homeDirectory}/.docker/completions $fpath)
+      '';
+
       # Quitting Docker Desktop (or it crashing) takes the daemon down with it,
       # so relaunch it — same polling approach as modules/darwin/twingate.
       launchd.agents.docker-desktop-keepalive = lib.mkIf cfg.keepAlive {
