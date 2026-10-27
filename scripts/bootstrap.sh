@@ -123,9 +123,23 @@ else
     git_email=""
     # `|| true`: the wrapper runs under `set -e`, and `read` fails on EOF (a
     # non-interactive run) — that should fall through to the warning, not abort
-    # the whole bootstrap.
-    read -rp "  git user.name: " git_name || true
-    read -rp "  git user.email: " git_email || true
+    # the whole bootstrap. An empty answer ends the loop the same way.
+    # The email is also this identity's GPG signing key (modules/shared/git
+    # pins user.signingKey to it), so a typo here silently breaks signing:
+    # reject anything that isn't shaped like an address and make the user
+    # confirm what they typed.
+    while true; do
+      read -rp "  git user.name: " git_name || true
+      read -rp "  git user.email: " git_email || true
+      [[ -z "$git_name" || -z "$git_email" ]] && break
+      if [[ ! "$git_email" =~ ^[^@[:space:]]+@[^@[:space:]]+\.[^@[:space:]]+$ ]]; then
+        echo "  '$git_email' doesn't look like an email address — try again." >&2
+        continue
+      fi
+      confirm=""
+      read -rp "  Use $git_name <$git_email>? [Y/n] " confirm || true
+      [[ ! "$confirm" =~ ^[Nn]$ ]] && break
+    done
     if [[ -z "$git_name" || -z "$git_email" ]]; then
       echo "warning: name or email left empty — skipping. git will have no identity" >&2
       echo "         on this machine until you create $identity_path yourself:" >&2
