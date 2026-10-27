@@ -29,7 +29,8 @@
     direnv.enable = true;
     ghostty.enable = true;
     tmux.enable = true;
-    neovim.enable = true;
+    # neovim is intentionally off on this host for now; the module stays in the
+    # repo and other hosts keep using it.
     touchIdSudo.enable = true;
     skhd.enable = true;
     wheelclick.enable = true;
