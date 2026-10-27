@@ -7,29 +7,14 @@
 }: let
   cfg = config.modules.git;
 
-  # git has no native "sign if possible" mode: `commit.gpgsign = true` makes
-  # every commit hard-fail the moment no usable secret key is found (freshly
-  # bootstrapped host, smartcard unplugged, gpg-agent locked, ...). This
-  # pre-commit hook re-checks on every commit and flips the *local*
-  # commit.gpgsign accordingly, so signing happens whenever a key is
-  # available and silently falls back to unsigned otherwise, instead of
-  # blocking the commit.
-  #
-  # `flake.nosign` is an escape hatch for repos that must never be
-  # auto-signed regardless of key availability (see `publicIdentity` below) —
-  # the hook writes straight to local repo config, which always outranks an
-  # `includeIf`, so without this check it would silently re-enable signing
-  # the moment a key exists.
-  gpgSignFallbackHook = pkgs.writeShellScript "git-gpgsign-fallback" ''
-    if [ "$(git config --get flake.nosign)" = "true" ]; then
-      exit 0
-    fi
-    if gpg --list-secret-keys --with-colons 2>/dev/null | grep -q '^sec'; then
-      git config commit.gpgsign true
-    else
-      git config commit.gpgsign false
-    fi
-  '';
+  # Signing is strict: `commit.gpgsign = true` everywhere, so a commit fails
+  # outright rather than going out unsigned when no key is usable. Each
+  # identity also pins `user.signingKey` to its own email, so gpg only ever
+  # signs with the key whose user ID matches the commit's author — a commit
+  # can never be signed with a key belonging to a different identity (e.g. the
+  # public key on an employer-authored commit, or the reverse). Pinned by
+  # email rather than left to gpg's default key, which is just "whichever
+  # secret key comes first" on a host holding more than one.
 
   # Whichever of the two identity mechanisms this host uses, merged into
   # `programs.git.settings` below. Both halves are optional so a host declaring
@@ -37,7 +22,10 @@
   # one.
   userSection =
     lib.optionalAttrs (cfg.userName != null) {name = cfg.userName;}
-    // lib.optionalAttrs (cfg.userEmail != null) {email = cfg.userEmail;};
+    // lib.optionalAttrs (cfg.userEmail != null) {
+      email = cfg.userEmail;
+      signingKey = cfg.userEmail;
+    };
 
   identity =
     lib.optionalAttrs (userSection != {}) {user = userSection;}
@@ -50,9 +38,9 @@
   # are always authored by the public identity, on every host. `work`'s default
   # identity deliberately isn't in the repo, but its commits to these paths
   # still have to be public — so this overrides whatever the host's default
-  # identity is, for repos under those directories only. Signing is
-  # disabled here too — `flake.nosign` is checked by `gpgSignFallbackHook`
-  # above so a locally-available key doesn't get re-enabled on the next commit.
+  # identity is, for repos under those directories only, and it pins the
+  # signing key to the public email too, so these commits are never signed with
+  # whatever key the host's default identity uses.
   #
   # home-manager renders `programs.git.includes` with `mkAfter`, i.e. after
   # everything in `settings`, and git config is last-wins — so this beats both
@@ -64,9 +52,8 @@
       user = {
         name = "obvionaoe";
         email = "obvionaoe@protonmail.com";
+        signingKey = "obvionaoe@protonmail.com";
       };
-      commit.gpgsign = false;
-      flake.nosign = true;
     };
   };
 in {
@@ -178,8 +165,6 @@ in {
           "gitdir:~/.flake/"
           "gitdir:~/personal/"
         ];
-
-        hooks.pre-commit = gpgSignFallbackHook;
 
         ignores = [
           "**.local.md"
