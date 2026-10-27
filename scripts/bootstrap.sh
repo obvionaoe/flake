@@ -46,12 +46,24 @@ if [[ -d "$flake_dir" ]]; then
     echo "error: $flake_dir exists but isn't a git repo; move or remove it and re-run." >&2
     exit 1
   fi
-  echo "==> $flake_dir already exists, syncing to latest $REPO_URL (local changes discarded)..."
-  git -C "$flake_dir" remote set-url origin "$REPO_URL"
-  git -C "$flake_dir" fetch origin main
-  git -C "$flake_dir" checkout -B main origin/main
-  git -C "$flake_dir" reset --hard origin/main
-  git -C "$flake_dir" clean -fd
+  echo "==> $flake_dir already exists."
+  # Syncing is destructive (reset --hard + clean -fd), so never do it unasked;
+  # a non-interactive run (read fails on EOF) defaults to leaving it alone.
+  if [[ -n "$(git -C "$flake_dir" status --porcelain)" ]]; then
+    echo "    It has local changes:"
+    git -C "$flake_dir" status --short | /usr/bin/sed 's/^/      /'
+  fi
+  sync_answer=""
+  read -rp "Sync it to the latest $REPO_URL main? This DISCARDS all local changes and untracked files. [y/N] " sync_answer || true
+  if [[ "$sync_answer" =~ ^[Yy]$ ]]; then
+    git -C "$flake_dir" remote set-url origin "$REPO_URL"
+    git -C "$flake_dir" fetch origin main
+    git -C "$flake_dir" checkout -B main origin/main
+    git -C "$flake_dir" reset --hard origin/main
+    git -C "$flake_dir" clean -fd
+  else
+    echo "    Leaving $flake_dir as is."
+  fi
 else
   echo "==> Cloning $REPO_URL to $flake_dir..."
   git clone "$REPO_URL" "$flake_dir"
@@ -182,7 +194,7 @@ if flag modules.ssh.enable; then
   default_key="$(str modules.ssh.defaultIdentityFile)"
   [[ -n "$default_key" ]] && ssh_keys+=("$default_key")
   # Hardcoded in modules/shared/ssh's github-personal alias.
-  if flag modules.ssh.githubPersonal.enable; then ssh_keys+=("~/.ssh/personal"); fi
+  if flag modules.ssh.githubPersonal.enable; then ssh_keys+=("$HOME/.ssh/personal"); fi
   for key in "${ssh_keys[@]}"; do
     if [[ ! -e "${key/#\~/$HOME}" ]]; then
       todo+=("SSH key $key is missing: create or restore it, register it on GitHub, then 'ssh-add --apple-use-keychain $key' (git over SSH fails without it).")
