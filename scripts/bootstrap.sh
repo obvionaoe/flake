@@ -104,6 +104,15 @@ else
   identity_path="${identity_file/#\~/$HOME}"
   if [[ -e "$identity_path" ]]; then
     echo "$identity_path already exists — leaving it alone."
+    # Files written before signing was pinned per identity have no signingkey.
+    # Add just that line (derived from the file's own email) so re-running the
+    # bootstrap upgrades them; everything else in the file is untouched.
+    existing_email="$(git config --file "$identity_path" user.email 2>/dev/null || true)"
+    if [[ -n "$existing_email" && -z "$(git config --file "$identity_path" user.signingkey 2>/dev/null || true)" ]]; then
+      git config --file "$identity_path" user.signingkey "$existing_email"
+      /bin/chmod 600 "$identity_path"
+      echo "Added signingkey = $existing_email to $identity_path."
+    fi
   else
     echo "Host '$hostname' keeps its git identity out of the repo, in $identity_path."
     git_name=""
