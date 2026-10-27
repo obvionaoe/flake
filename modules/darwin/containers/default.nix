@@ -18,15 +18,10 @@ in {
     # only). Docker Desktop's CLI is what modules/shared/containers'
     # `docker` shell alias resolves to on Darwin — that module skips
     # installing nixpkgs' `docker` there so there's only one `docker`
-    # binary on PATH. The CLI's own config (credentials, plugins) still
-    # gets XDG-relocated via DOCKER_CONFIG there, same as any other
-    # platform — only Docker Desktop's *own* GUI/daemon state (the
-    # `desktop-linux` context, its runtime socket) stays at the fixed
-    # ~/.docker location it insists on regardless (upstream doesn't honor
-    # DOCKER_CONFIG for that half: docker/for-mac#2635, #6150), which is
-    # why modules/shared/containers also pins DOCKER_HOST straight at
-    # Docker Desktop's fixed socket rather than relying on a context
-    # lookup in the relocated config.
+    # binary on PATH. Docker Desktop keeps all of its state (contexts,
+    # credential helper, cli-plugins, the runtime socket) in the fixed
+    # ~/.docker and doesn't honor DOCKER_CONFIG (docker/for-mac#2635, #6150),
+    # so on Darwin the CLI uses ~/.docker too rather than the XDG location.
     homebrew.casks = ["docker-desktop"];
 
     home-manager.users.${user} = {

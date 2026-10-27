@@ -24,27 +24,20 @@ in {
         # On Darwin, Docker Desktop (modules/darwin/containers) supplies its
         # own `docker` CLI alongside the daemon it provides — installing
         # nixpkgs' `docker` too would put two copies of the same binary on
-        # PATH, fighting over the same DOCKER_CONFIG below. A future NixOS
-        # host has no Docker Desktop, so it still needs this one.
+        # PATH. A future NixOS host has no Docker Desktop, so it still needs
+        # this one.
         home.packages = with pkgs; [unstable.crane unstable.skopeo unstable.kind] ++ lib.optional (!pkgs.stdenv.isDarwin) docker;
 
-        home.sessionVariables =
-          {
-            DOCKER_CONFIG = "${config.home-manager.users.${user}.xdg.configHome}/docker";
-          }
-          // lib.optionalAttrs pkgs.stdenv.isDarwin {
-            # Docker Desktop's own GUI/daemon-management layer ignores
-            # DOCKER_CONFIG (confirmed upstream: docker/for-mac#2635,
-            # docker/for-mac#6150) and always reads/writes its
-            # `desktop-linux` context into the default ~/.docker/config.json
-            # — the CLI above, pointed at the relocated DOCKER_CONFIG, would
-            # never see that context and would fall back to a "default"
-            # context with no socket behind it. Sidestep context resolution
-            # entirely by pointing straight at Docker Desktop's own fixed
-            # daemon socket instead — a real ~/.docker path Desktop manages
-            # itself, unrelated to DOCKER_CONFIG (see modules/darwin/containers).
-            DOCKER_HOST = "unix:///Users/${user}/.docker/run/docker.sock";
-          };
+        # Not on Darwin: Docker Desktop's own GUI/daemon-management layer
+        # ignores DOCKER_CONFIG (docker/for-mac#2635, docker/for-mac#6150) and
+        # always keeps its `desktop-linux` context, credential helper and
+        # `cli-plugins` (compose, buildx) in the default ~/.docker. A CLI
+        # pointed anywhere else sees none of that — `docker compose` and
+        # `docker buildx` come back "unknown command" — so on macOS the CLI
+        # stays on ~/.docker like Desktop does.
+        home.sessionVariables = lib.optionalAttrs (!pkgs.stdenv.isDarwin) {
+          DOCKER_CONFIG = "${config.home-manager.users.${user}.xdg.configHome}/docker";
+        };
 
         home.shellAliases = {
           d = "docker";
