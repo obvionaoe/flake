@@ -41,6 +41,9 @@
     # until the cache expires — same tradeoff ez-compinit's own cache made.
     autoload -Uz compinit
     _zcompdump=${config.home-manager.users.${user}.xdg.cacheHome}/zsh/zcompdump
+    # Nothing else creates this directory, and neither compinit nor zcompile
+    # will, so on a fresh machine the dump (and its .zwc) can't be written.
+    [[ -d $_zcompdump:h ]] || mkdir -p -- $_zcompdump:h
     if [[ -n $_zcompdump(#qN.mh+24) ]]; then
       compinit -d $_zcompdump
       zcompile -R -- $_zcompdump
