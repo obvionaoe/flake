@@ -54,9 +54,13 @@ if [[ -d "$flake_dir" ]]; then
     git -C "$flake_dir" status --short | /usr/bin/sed 's/^/      /'
   fi
   sync_answer=""
-  read -rp "Sync it to the latest $REPO_URL main? This DISCARDS all local changes and untracked files. [y/N] " sync_answer || true
+  # An existing checkout keeps whatever origin it has (e.g. an SSH alias for
+  # pushing); REPO_URL is only used to add one when there is none.
+  git -C "$flake_dir" remote get-url origin >/dev/null 2>&1 \
+    || git -C "$flake_dir" remote add origin "$REPO_URL"
+  origin_url="$(git -C "$flake_dir" remote get-url origin)"
+  read -rp "Sync it to the latest main from $origin_url? This DISCARDS all local changes and untracked files. [y/N] " sync_answer || true
   if [[ "$sync_answer" =~ ^[Yy]$ ]]; then
-    git -C "$flake_dir" remote set-url origin "$REPO_URL"
     git -C "$flake_dir" fetch origin main
     git -C "$flake_dir" checkout -B main origin/main
     git -C "$flake_dir" reset --hard origin/main
