@@ -119,6 +119,7 @@ else
       echo "           [user]" >&2
       echo "             name = ..." >&2
       echo "             email = ..." >&2
+      echo "             signingkey = <same email>" >&2
     else
       /bin/mkdir -p "$(/usr/bin/dirname "$identity_path")"
       /bin/cat >"$identity_path" <<EOF
@@ -127,6 +128,7 @@ else
 [user]
 	name = $git_name
 	email = $git_email
+	signingkey = $git_email
 EOF
       /bin/chmod 600 "$identity_path"
       echo "Wrote $identity_path."
@@ -204,9 +206,24 @@ fi
 
 if flag modules.gnupg.enable; then
   gpg_bin="/etc/profiles/per-user/$current_user/bin/gpg"
-  if ! "$gpg_bin" --list-secret-keys --with-colons 2>/dev/null | /usr/bin/grep -q '^sec'; then
-    todo+=("No GPG secret key found: import or generate one, otherwise git commits stay unsigned (silently).")
+  # Signing is strict and each identity signs only with the key matching its
+  # own email (modules/shared/git pins user.signingKey), so a missing key blocks
+  # commits for that identity instead of falling back to another one. ~/.flake
+  # and ~/personal always use the public identity, on every host; this host's
+  # own identity, when it lives in an identity file, is checked too.
+  gpg_emails=("obvionaoe@protonmail.com")
+  if [[ -n "${identity_path:-}" && -e "$identity_path" ]]; then
+    identity_email="$(git config --file "$identity_path" user.email 2>/dev/null || true)"
+    [[ -n "$identity_email" ]] && gpg_emails+=("$identity_email")
+    if [[ -n "$identity_email" && -z "$(git config --file "$identity_path" user.signingkey 2>/dev/null || true)" ]]; then
+      todo+=("$identity_path has no 'signingkey = $identity_email' under [user]: add it so commits are only ever signed with that identity's key.")
+    fi
   fi
+  for email in "${gpg_emails[@]}"; do
+    if ! "$gpg_bin" --list-secret-keys --with-colons "$email" 2>/dev/null | /usr/bin/grep -q '^sec'; then
+      todo+=("No GPG secret key for $email: generate or import one (its user ID must contain that exact email), otherwise commits made as that identity fail to sign.")
+    fi
+  done
 fi
 
 if flag modules.containers.enable; then
