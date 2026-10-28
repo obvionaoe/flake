@@ -123,7 +123,7 @@ in {
           ignoreAllDups = true;
           ignoreDups = true;
           ignoreSpace = true;
-          path = "${config.home-manager.users.${user}.xdg.dataHome}/zsh/zsh_history";
+          path = "${config.home-manager.users.${user}.xdg.stateHome}/zsh/history";
           size = 1000000000;
         };
 
