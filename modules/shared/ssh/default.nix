@@ -20,12 +20,6 @@ in {
         every host's relevant key has a different path/name.
       '';
     };
-
-    githubPersonal.enable = lib.mkEnableOption ''
-      the `github-personal` ssh alias, for a host whose agent holds more than
-      one GitHub-registered key (e.g. a work key alongside a personal one) —
-      see the option's own settings block below for why
-    '';
   };
 
   config = lib.mkMerge [
@@ -76,23 +70,6 @@ in {
         };
 
         home.file.".ssh/sockets/.keep".text = "";
-      };
-    })
-
-    (lib.mkIf (cfg.enable && cfg.githubPersonal.enable) {
-      # A host whose ssh-agent holds more than one GitHub-registered key
-      # can't rely on plain `git@github.com`: the agent offers keys in its
-      # own order, and GitHub authenticates as whichever one it accepts
-      # first — not necessarily the identity the current repo needs. This
-      # alias pins the key explicitly (`IdentitiesOnly` stops ssh from
-      # offering any other agent key), so
-      # `git@github-personal:<owner>/<repo>.git` always authenticates as the
-      # personal account regardless of what else is loaded.
-      home-manager.users.${user}.programs.ssh.settings."github-personal" = {
-        HostName = "github.com";
-        User = "git";
-        IdentityFile = "~/.ssh/personal";
-        IdentitiesOnly = true;
       };
     })
   ];

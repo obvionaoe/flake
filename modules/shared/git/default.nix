@@ -46,15 +46,29 @@
   # everything in `settings`, and git config is last-wins — so this beats both
   # the inline `[user]` and `identityFile`. Using `contents` rather than `path`
   # means home-manager generates the included file itself, in the store.
+  #
+  # Authentication follows the same split as authorship: with `personalSshKey`
+  # set, these repos also pin `core.sshCommand` to that key, so plain
+  # `git@github.com` URLs authenticate as the public account even on a host
+  # whose default github.com key belongs to someone else (e.g. `work`).
   publicIdentity = condition: {
     inherit condition;
-    contents = {
-      user = {
-        name = "obvionaoe";
-        email = "obvionaoe@protonmail.com";
-        signingKey = "obvionaoe@protonmail.com";
+    contents =
+      {
+        user = {
+          name = "obvionaoe";
+          email = "obvionaoe@protonmail.com";
+          signingKey = "obvionaoe@protonmail.com";
+        };
+      }
+      // lib.optionalAttrs (cfg.personalSshKey != null) {
+        # A separate ControlPath is load-bearing: the `github.com` block in
+        # modules/shared/ssh multiplexes over `~/.ssh/sockets/%r@%h-%p`, and a
+        # live master there (authenticated with the host's default key) would
+        # be reused verbatim, silently ignoring `-i` and authenticating as the
+        # wrong account.
+        core.sshCommand = "ssh -i ${cfg.personalSshKey} -o IdentitiesOnly=yes -o ControlPath=~/.ssh/sockets/personal-%r@%h-%p";
       };
-    };
   };
 in {
   options.modules.git = {
@@ -95,6 +109,18 @@ in {
         committed here. The file is written by `scripts/bootstrap.sh`, which
         prompts for name/email on first run; git silently ignores it if it's
         missing, so a host with no identity yet still evaluates and builds.
+      '';
+    };
+
+    personalSshKey = lib.mkOption {
+      type = lib.types.nullOr lib.types.str;
+      default = null;
+      example = "~/.ssh/personal";
+      description = ''
+        SSH private key (a path, never key material) for repos under
+        `~/.flake` and `~/personal`, set as `core.sshCommand` there alongside
+        the public identity. Only for hosts whose default github.com key isn't
+        the personal one; leave null elsewhere.
       '';
     };
   };

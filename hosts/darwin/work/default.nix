@@ -11,6 +11,9 @@
       # be committed to this public repo — it lives in an untracked file that
       # scripts/bootstrap.sh prompts for and writes on first run.
       identityFile = "~/.config/git/identity";
+      # Repos under ~/.flake and ~/personal authenticate with the personal
+      # key, matching their public commit identity.
+      personalSshKey = "~/.ssh/personal";
     };
     # This host's ssh-agent holds a work key alongside the personal one used
     # to push to public repos like this flake. Without defaultIdentityFile,
@@ -19,12 +22,11 @@
     # identity instead of the work one whenever the personal key was the one
     # actually loaded, with no error or warning to notice it by. Pinning
     # plain git@github.com to the work key here makes that deterministic
-    # regardless of agent state; github-personal stays as the explicit
-    # opt-in alias for pushing to public repos like this flake.
+    # regardless of agent state; repos that need the personal key get it from
+    # modules.git.personalSshKey above.
     ssh = {
       enable = true;
       defaultIdentityFile = "~/.ssh/work";
-      githubPersonal.enable = true;
     };
     direnv.enable = true;
     ghostty.enable = true;

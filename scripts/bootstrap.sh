@@ -222,8 +222,9 @@ if flag modules.ssh.enable; then
   ssh_keys=()
   default_key="$(str modules.ssh.defaultIdentityFile)"
   [[ -n "$default_key" ]] && ssh_keys+=("$default_key")
-  # Hardcoded in modules/shared/ssh's github-personal alias.
-  if flag modules.ssh.githubPersonal.enable; then ssh_keys+=("$HOME/.ssh/personal"); fi
+  # The key modules/shared/git pins for ~/.flake and ~/personal, if any.
+  personal_key="$(str modules.git.personalSshKey)"
+  [[ -n "$personal_key" ]] && ssh_keys+=("$personal_key")
   for key in "${ssh_keys[@]}"; do
     if [[ ! -e "${key/#\~/$HOME}" ]]; then
       todo+=("SSH key $key is missing: create or restore it, register it on GitHub, then 'ssh-add --apple-use-keychain $key' (git over SSH fails without it).")
