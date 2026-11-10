@@ -67,7 +67,14 @@
         # live master there (authenticated with the host's default key) would
         # be reused verbatim, silently ignoring `-i` and authenticating as the
         # wrong account.
-        core.sshCommand = "ssh -i ${cfg.personalSshKey} -o IdentitiesOnly=yes -o ControlPath=~/.ssh/sockets/personal-%r@%h-%p";
+        #
+        # `-F /dev/null` is equally load-bearing: the same `github.com` block
+        # also sets `IdentityFile` to the host's default key, and ssh merges
+        # that with `-i` — so with the default key loaded in the agent it is
+        # offered first (even under `IdentitiesOnly`) and GitHub authenticates
+        # as the wrong account. Skipping the config file leaves `-i` as the
+        # only identity candidate.
+        core.sshCommand = "ssh -F /dev/null -i ${cfg.personalSshKey} -o IdentitiesOnly=yes -o ControlPath=~/.ssh/sockets/personal-%r@%h-%p";
       };
   };
 in {
