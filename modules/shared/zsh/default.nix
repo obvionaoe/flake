@@ -103,7 +103,6 @@ in {
         };
 
         shellAliases = {
-          ll = "ls -la";
           gs = "git status";
           reload = "exec zsh";
 

@@ -21,6 +21,9 @@ in {
         "--header"
         "--long"
         "--all"
+        # Hide macOS's .DS_Store and nothing else (exact-name glob, so
+        # every other dotfile still shows under --all).
+        "--ignore-glob=.DS_Store"
       ];
 
       git = true;
