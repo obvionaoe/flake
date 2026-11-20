@@ -68,8 +68,10 @@ in {
       # export with that surface. Its sub-features (plugins, statusline,
       # hooks, mcp, latest, api-key-helper) each carry their own
       # `enable`/empty-by-default gate, so importing it doesn't turn
-      # anything on beyond what's set below — consistent with this repo's
-      # "importing a module costs nothing" rule (modules/CLAUDE.md).
+      # anything on beyond what's set below — except `install`, whose
+      # Darwin default ("native") enables `latest`; it's pinned to "nix"
+      # below. Consistent with this repo's "importing a module costs
+      # nothing" rule (modules/CLAUDE.md) otherwise.
       imports = [nix-claude-code.homeModules.default];
 
       programs.claude = {
@@ -111,10 +113,14 @@ in {
           exec ${lib.optionalString config.modules.direnv.enable ''${lib.getExe pkgs.direnv} exec "$PWD" ''}${lib.getExe pkgs.claude-code} "$@"
         '';
 
-        # Note: `programs.claude.latest` (the official curl|bash installer,
-        # which would shadow this Nix-managed binary on PATH) only exists
-        # when nix-claude-code.homeModules.latest is imported — it isn't
-        # here, so there's nothing to disable.
+        # Keep the Nix-managed binary as the only install. nix-claude-code's
+        # `install` option defaults to "native" on Darwin, which sets
+        # `package = null`, enables `programs.claude.latest` and runs the
+        # official curl|bash installer (claude.ai/install.sh) on every
+        # activation where ~/.local/bin/claude isn't a native install yet —
+        # shadowing this binary and turning on `autoUpdates`. "nix" uses the
+        # `package` above unchanged.
+        install = "nix";
 
         # Nix-owned settings only. `permissions.allow`/`ask` are deliberately
         # left undeclared: nix-claude-code overwrites the *entire* array on
