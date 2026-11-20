@@ -21,10 +21,10 @@
   # is deleted immediately after import within the same activation run.
   openlogiCodesignP12Pass = "openlogi-local-codesign";
 
-  # Local tweak on top of nixpkgs-unstable's openlogi: the MX Master 4 gesture
-  # patch. nixpkgs itself already builds and installs openlogi-agent on
-  # Darwin (and handles the cargo-bundle 0.12 schema/format), so nothing else
-  # is needed for that.
+  # Local tweaks on top of nixpkgs-unstable's openlogi: the MX Master 4 gesture
+  # patch and the URL-scheme registration below. nixpkgs itself already builds
+  # and installs openlogi-agent on Darwin (and handles the cargo-bundle 0.12
+  # `--format osx` flag), so nothing else is needed for that.
   openlogi = pkgs.unstable.openlogi.overrideAttrs (old: {
     # Raw-XY jump discard for the MX Master 4 gesture button/panel, verified
     # live on real hardware: raw-XY reports occasionally carry an
@@ -42,6 +42,30 @@
     # (silently dead HID++ channel after Bluetooth sleep/wake) is upstream as
     # of 0.9.0 (openlogi-device session/capture/liveness.rs).
     patches = (old.patches or []) ++ [./mx-master-4-gesture-fixes.patch];
+
+    # Register the `openlogi://` URL scheme (and minimum macOS version) in the
+    # app bundle's Info.plist. Upstream's Cargo.toml declares neither — its own
+    # `xtask macos package` stamps them after cargo-bundle runs, and nixpkgs
+    # only runs cargo-bundle. Without the URL type, macOS can't resolve
+    # `openlogi://show`, so the agent's menu-bar "Show Main Window" (which
+    # `open`s that URL) silently does nothing. cargo-bundle 0.12 reads these
+    # from the nested `[package.metadata.bundle.osx]` table; values match
+    # xtask's (`MACOS_MINIMUM_OS_VERSION`, `URL_SCHEME`). Fails loudly if
+    # upstream starts declaring the table itself, so this gets dropped then.
+    postPatch =
+      (old.postPatch or "")
+      + lib.optionalString pkgs.stdenv.hostPlatform.isDarwin ''
+        if grep -q '^\[package.metadata.bundle.osx\]' crates/openlogi-desktop/Cargo.toml; then
+          echo "ERROR: upstream now declares [package.metadata.bundle.osx]; drop this postPatch" >&2
+          exit 1
+        fi
+        cat >> crates/openlogi-desktop/Cargo.toml <<'EOF'
+
+        [package.metadata.bundle.osx]
+        minimum_system_version = "13.0"
+        url_schemes = ["openlogi"]
+        EOF
+      '';
   });
 
   # For generating config.toml declaratively (see cfg.settings/cfg.devices
