@@ -18,8 +18,15 @@
         pname = "openai_agents";
         hash = "sha256-/iF3juHoIWyc23dfqG0RsIvmjAGE4UAjmTCI0/gSwL4=";
       };
-      # new runtime dependency in 0.19
-      dependencies = old.dependencies ++ [final.websockets];
+      # nixpkgs-unstable's python set has moved past 0.19.4's upper bounds
+      # (openai<3, mcp<2, websockets<17); relax them rather than pin older
+      # copies. Untested against those newer majors — revisit if strix
+      # misbehaves at runtime. (`old.dependencies` already has websockets.)
+      pythonRelaxDeps = [
+        "openai"
+        "mcp"
+        "websockets"
+      ];
     });
   });
 in
@@ -70,10 +77,12 @@ in
       ];
 
     # Upper/lower bounds that nixpkgs-unstable's versions sit just outside of:
-    # cryptography<49 (nixpkgs: 50.x), pydantic-settings>=2.13 (nixpkgs: 2.12).
+    # cryptography<49 (nixpkgs: 50.x), pydantic-settings>=2.13 (nixpkgs: 2.12),
+    # openai<3 (nixpkgs: 3.x — untested major bump, see openai-agents above).
     pythonRelaxDeps = [
       "cryptography"
       "pydantic-settings"
+      "openai"
     ];
 
     # The bundled Go TUI is a prebuilt, ad-hoc-signed Mach-O; stripping it
