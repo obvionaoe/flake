@@ -21,73 +21,27 @@
   # is deleted immediately after import within the same activation run.
   openlogiCodesignP12Pass = "openlogi-local-codesign";
 
-  # Local tweaks on top of nixpkgs-unstable's openlogi: the cargo-bundle 0.12
-  # fixes (installPhase here, postPatch below) and the MX Master 4 gesture
+  # Local tweak on top of nixpkgs-unstable's openlogi: the MX Master 4 gesture
   # patch. nixpkgs itself already builds and installs openlogi-agent on
-  # Darwin, so nothing extra is needed for that.
+  # Darwin (and handles the cargo-bundle 0.12 schema/format), so nothing else
+  # is needed for that.
   openlogi = pkgs.unstable.openlogi.overrideAttrs (old: {
-    # cargo-bundle 0.12.0 with no --format builds every format for the host,
-    # which on macOS now includes a .dmg via `hdiutil` — absent from the Nix
-    # sandbox ("Failed to spawn process: hdiutil") — and prints several paths
-    # where upstream's `app_path=$(cargo bundle --release | xargs)` expects
-    # one. Restrict it to the .app. `replaceStrings` is a silent no-op on a
-    # miss, hence the assert, so an upstream wording change fails loudly.
-    installPhase =
-      assert lib.hasInfix "cargo bundle --release" old.installPhase;
-      builtins.replaceStrings ["cargo bundle --release"] ["cargo bundle --release --format osx"] old.installPhase;
-
-    # Two MX Master 4 gesture-reliability fixes for this exact pinned version
-    # (0.6.25), both verified live on real hardware with locally instrumented
-    # builds before landing:
+    # Raw-XY jump discard for the MX Master 4 gesture button/panel, verified
+    # live on real hardware: raw-XY reports occasionally carry an
+    # absolute-position jump instead of a real delta (single samples up to
+    # five figures, versus a few hundred for an entire deliberate swipe),
+    # which the agent summed like real motion — the jump alone crossed the
+    # swipe-commit threshold, so a swipe randomly fired the wrong direction
+    # or nothing. Upstream (0.9.0) only skips the *first* sample of a hold,
+    # which was this fix's own insufficient first attempt: jumps also show up
+    # several samples into an otherwise-clean hold. The patch is a plain
+    # magnitude sanity check on every sample of a hold. Reported upstream as
+    # AprilNEA/OpenLogi#719. Drop it once upstream fixes this.
     #
-    # - Raw-XY jump discard: gesture button/panel raw-XY reports occasionally
-    #   carry an absolute-position jump instead of a real delta (reproduced
-    #   live: single samples up to five figures, versus a few hundred for an
-    #   entire deliberate swipe), which the agent summed like real motion —
-    #   the jump alone crossed the swipe-commit threshold, so a
-    #   left/right/up/down swipe randomly fired the wrong direction or
-    #   nothing. The first attempt (skip only the first sample after contact)
-    #   still let later jumps through; the landed fix is a plain magnitude
-    #   sanity check applied to every raw-XY sample of a hold. Reported
-    #   upstream as AprilNEA/OpenLogi#719 (against current master's
-    #   restructured capture code — 0.6.25 predates that split, so this is a
-    #   from-scratch backport, not a cherry-pick).
-    #
-    # - Capture-channel liveness watchdog: 0.6.25's capture session has no way
-    #   to notice a HID++ channel that goes silently dead without an explicit
-    #   disconnect (observed after a Bluetooth-direct device's sleep/wake
-    #   cycle — the OS reports the mouse present again before the old
-    #   channel's report delivery has actually recovered), so gestures can
-    #   stop being recognized until the agent is restarted. Backported from a
-    #   later upstream release that added exactly this ping-based watchdog;
-    #   not yet confirmed as the fix for the sleep/wake symptom (that needs a
-    #   real sleep/wake cycle to reproduce, unlike the jump discard above),
-    #   but it's a real, already-upstreamed hardening regardless.
-    #
-    # Drop each half once a fix lands upstream and this version bumps past
-    # whichever release picks it up.
+    # The capture-channel liveness watchdog this patch used to also carry
+    # (silently dead HID++ channel after Bluetooth sleep/wake) is upstream as
+    # of 0.9.0 (openlogi-device session/capture/liveness.rs).
     patches = (old.patches or []) ++ [./mx-master-4-gesture-fixes.patch];
-
-    # cargo-bundle 0.12.0 (what nixpkgs-unstable now ships) moved the macOS
-    # bundle keys out of flat `osx_*` fields into a nested
-    # `[package.metadata.bundle.osx]` table (`minimum_system_version`,
-    # `url_schemes`), and rejects the old names with "unknown field
-    # `osx_minimum_system_version`" at installPhase. OpenLogi 0.6.25 still
-    # uses the flat form, so rewrite it into the nested one. Drop this once
-    # a release that targets the new cargo-bundle schema lands in nixpkgs.
-    postPatch =
-      (old.postPatch or "")
-      + lib.optionalString pkgs.stdenv.hostPlatform.isDarwin ''
-        substituteInPlace crates/openlogi-gui/Cargo.toml \
-          --replace-fail 'osx_minimum_system_version = "13.0"' "" \
-          --replace-fail 'osx_url_schemes = ["openlogi"]' ""
-        cat >> crates/openlogi-gui/Cargo.toml <<'EOF'
-
-        [package.metadata.bundle.osx]
-        minimum_system_version = "13.0"
-        url_schemes = ["openlogi"]
-        EOF
-      '';
   });
 
   # For generating config.toml declaratively (see cfg.settings/cfg.devices
@@ -147,7 +101,14 @@
       serial="$(${openlogi}/bin/openlogi list 2>/dev/null | /usr/bin/awk -v vid="$vid" -v pid="$pid" '
         /vid=/ { inBlock = ($0 ~ ("vid=" vid " pid=" pid)) }
         inBlock && match($0, /serial=[^ ]+/) { print substr($0, RSTART + 7, RLENGTH - 7); exit }
-      ' | /usr/bin/tr '[:upper:]' '[:lower:]')"
+      ' | /usr/bin/tr '[:upper:]' '[:lower:]')" || serial=""
+      # The `|| serial=""` above is load-bearing: home-manager activation runs
+      # under `set -eu -o pipefail`, and `openlogi list` exits 2 when it sees
+      # no device (e.g. 0.9.0's dormant agent has an empty inventory, or the
+      # mouse is asleep). Without it that exit status silently aborts the
+      # whole activation right here — no error, and every later step
+      # (setDarwinDefaults, vscodeProfiles, ...) never runs. An empty serial
+      # falls through to the config.toml fallback below instead.
       if ! [[ "$serial" =~ ^[a-z0-9]+$ ]]; then
         serial=""
       fi
@@ -188,7 +149,10 @@ in {
     settings = lib.mkOption {
       type = tomlFormat.type;
       default = {
-        launch_at_login = false;
+        # 0.9.0's macOS agent stays dormant (and exits after 60s) unless this
+        # is on or a GUI client demands arming — so with it off, the launchd
+        # agent below idles and no button/gesture is captured.
+        launch_at_login = true;
         check_for_updates = false;
         auto_install_updates = false;
         update_prompt_seen = true;
